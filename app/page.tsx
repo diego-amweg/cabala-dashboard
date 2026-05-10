@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Chat from '@/components/Chat';
 
 const CITIES = [
   { id: 'van', name: 'Vancouver', x: 90, y: 30 },
@@ -361,9 +362,10 @@ export default function CabalaDashboard() {
         )}
 
         <footer className="mt-12 border-t border-stone-200 pt-4 text-center text-[10px] text-stone-400">
-          Cábala v0.2 · datos reales + claude · construido por Diego con asistencia de Claude
+          Cábala v0.3 · datos reales + claude + chat · construido por Diego con asistencia de Claude
         </footer>
       </div>
+      <Chat context={{ memes, tribe: Array.from(tribe), activeMods: Array.from(activeMods) }} />
     </main>
   );
 }
