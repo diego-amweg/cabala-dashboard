@@ -34,7 +34,7 @@ const INITIAL_TEAMS: Team[] = [
   { code: 'ENG', name: 'Inglaterra', sentiment: 38, bg: '#fee2e2', fg: '#7f1d1d', bar: '#ef4444' },
 ];
 
-interface FeedItem { tag: 'meme' | 'polémica' | 'pelea' | 'viral'; text: string; when: string; score?: number; url?: string; author?: string; query?: string; }
+interface FeedItem { tag: 'meme' | 'polémica' | 'pelea' | 'viral' | 'noticia'; text: string; when: string; score?: number; url?: string; author?: string; query?: string; relevance?: number; }
 interface CalleItem { city: string; text: string; when?: string; }
 interface SufItem { code: string; label: string; text: string; }
 
@@ -71,6 +71,7 @@ const TAG_COLORS: Record<string, { bg: string; fg: string }> = {
   'polémica': { bg: '#fee2e2', fg: '#7f1d1d' },
   'pelea':    { bg: '#fee2e2', fg: '#7f1d1d' },
   'viral':    { bg: '#ede9fe', fg: '#4c1d95' },
+  'noticia':  { bg: '#dbeafe', fg: '#1e3a8a' },
 };
 
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
@@ -182,7 +183,7 @@ export default function CabalaDashboard() {
     memesContent = <p className="text-xs text-stone-400">sin posts por ahora.</p>;
   } else {
     memesContent = memes.map((m, i) => {
-      const tc = TAG_COLORS[m.tag];
+      const tc = TAG_COLORS[m.tag] || TAG_COLORS.viral;
       return (
         <a key={i} href={m.url} target="_blank" rel="noopener noreferrer" className="mb-1.5 block rounded-md bg-stone-100 px-2.5 py-2 text-xs leading-relaxed transition-colors last:mb-0 hover:bg-stone-200">
           <span className="float-right ml-2 font-mono text-[10px] tabular-nums text-stone-400">{m.when}</span>
@@ -360,7 +361,7 @@ export default function CabalaDashboard() {
         )}
 
         <footer className="mt-12 border-t border-stone-200 pt-4 text-center text-[10px] text-stone-400">
-          Cábala v0.1 · datos parcialmente reales · construido por Diego con asistencia de Claude
+          Cábala v0.2 · datos reales + claude · construido por Diego con asistencia de Claude
         </footer>
       </div>
     </main>
