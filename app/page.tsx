@@ -61,7 +61,7 @@ const SUF: SufItem[] = [
   { code: 'ARG', label: 'Argentina', text: '37 millones conteniendo la respiración. cuadras enteras vacías' },
   { code: 'BRA', label: 'Brasil', text: 'rating histórico de TV: 78% de share nacional. Globo dispara' },
   { code: 'MAR', label: 'Marruecos', text: 'rezo colectivo en Casablanca antes del segundo tiempo' },
-  { code: 'ENG', label: 'Inglaterra', text: '"It\'s coming home" trending por 14ª vez consecutiva' },
+  { code: 'ENG', label: 'Inglaterra', text: 'It\u2019s coming home trending por 14a vez consecutiva' },
   { code: 'MEX', label: 'México', text: 'CDMX paralizada. el Zócalo se transformó en estadio gigante' },
   { code: 'JPN', label: 'Japón', text: 'cánticos sincronizados desde Tokio hasta el MetLife. 95k cantando' },
 ];
@@ -173,6 +173,32 @@ export default function CabalaDashboard() {
   const sortedTeams = [...visibleTeams].sort((a, b) => b.sentiment - a.sentiment);
   const visibleSuf = tribe.size ? SUF.filter(s => tribe.has(s.code)) : SUF;
 
+  let memesContent;
+  if (memesLoading) {
+    memesContent = <p className="text-xs text-stone-400">trayendo posts de r/soccer y r/worldcup...</p>;
+  } else if (memesError) {
+    memesContent = <p className="text-xs text-stone-400">no se pudo conectar con reddit. mostrara posts cuando vuelva la conexion.</p>;
+  } else if (memes.length === 0) {
+    memesContent = <p className="text-xs text-stone-400">sin posts por ahora.</p>;
+  } else {
+    memesContent = memes.map((m, i) => {
+      const tc = TAG_COLORS[m.tag];
+      return (
+        <a key={i} href={m.url} target="_blank" rel="noopener noreferrer" className="mb-1.5 block rounded-md bg-stone-100 px-2.5 py-2 text-xs leading-relaxed transition-colors last:mb-0 hover:bg-stone-200">
+          <span className="float-right ml-2 font-mono text-[10px] tabular-nums text-stone-400">{m.when}</span>
+          <span className="mr-1.5 inline-block rounded px-1.5 py-px text-[9px] font-medium uppercase tracking-wider align-[1px]" style={{ backgroundColor: tc.bg, color: tc.fg }}>{m.tag}</span>
+          <span className="mr-1.5 text-[10px] text-stone-500">r/{m.sub}</span>
+          {m.text}
+        </a>
+      );
+    });
+  }
+
+  let memesMeta;
+  if (memesLoading) memesMeta = 'cargando...';
+  else if (memesError) memesMeta = 'reddit no respondió';
+  else memesMeta = 'desde reddit · refresca cada 5 min';
+
   return (
     <main className="min-h-screen bg-stone-50 text-stone-900 selection:bg-orange-200">
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
@@ -212,15 +238,7 @@ export default function CabalaDashboard() {
           ].map(m => {
             const on = activeMods.has(m.id);
             return (
-              <button
-                key={m.id}
-                onClick={() => toggleMod(m.id)}
-                className={`rounded-md border px-2.5 py-1 text-xs transition-colors ${
-                  on
-                    ? 'border-orange-300 bg-orange-50 text-orange-950'
-                    : 'border-stone-200 text-stone-400 hover:border-stone-300'
-                }`}
-              >
+              <button key={m.id} onClick={() => toggleMod(m.id)} className={`rounded-md border px-2.5 py-1 text-xs transition-colors ${on ? 'border-orange-300 bg-orange-50 text-orange-950' : 'border-stone-200 text-stone-400 hover:border-stone-300'}`}>
                 {m.label}
               </button>
             );
@@ -236,13 +254,7 @@ export default function CabalaDashboard() {
             {teams.map(t => {
               const on = tribe.has(t.code);
               return (
-                <button
-                  key={t.code}
-                  onClick={() => toggleTribe(t.code)}
-                  className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
-                    on ? 'border-emerald-400 bg-emerald-50 text-emerald-900' : 'border-stone-200 text-stone-500 hover:border-stone-300'
-                  }`}
-                >
+                <button key={t.code} onClick={() => toggleTribe(t.code)} className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${on ? 'border-emerald-400 bg-emerald-50 text-emerald-900' : 'border-stone-200 text-stone-500 hover:border-stone-300'}`}>
                   {t.name}
                 </button>
               );
@@ -321,31 +333,10 @@ export default function CabalaDashboard() {
           <section className="mt-3">
             <div className="mb-1.5 flex items-baseline justify-between">
               <h2 className="text-xs font-medium tracking-wide text-stone-700">memes, peleas y polémicas</h2>
-              <span className="text-[10px] text-stone-400">
-                {memesLoading ? 'cargando...' : memesError ? 'reddit no respondió' : 'desde reddit · refresca cada 5 min'}
-              </span>
+              <span className="text-[10px] text-stone-400">{memesMeta}</span>
             </div>
             <div className="rounded-xl border border-stone-200 bg-white p-3.5">
-              {memesLoading && <p className="text-xs text-stone-400">trayendo posts de r/soccer y r/worldcup...</p>}
-              {!memesLoading && memesError && <p className="text-xs text-stone-400">no se pudo conectar con reddit. mostrará posts cuando vuelva la conexión.</p>}
-              {!memesLoading && !memesError && memes.length === 0 && <p className="text-xs text-stone-400">sin posts por ahora.</p>}
-              {memes.map((m, i) => {
-                const tc = TAG_COLORS[m.tag];
-                return (
-                  
-                    key={i}
-                    href={m.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mb-1.5 block rounded-md bg-stone-100 px-2.5 py-2 text-xs leading-relaxed transition-colors last:mb-0 hover:bg-stone-200"
-                  >
-                    <span className="float-right ml-2 font-mono text-[10px] tabular-nums text-stone-400">{m.when}</span>
-                    <span className="mr-1.5 inline-block rounded px-1.5 py-px text-[9px] font-medium uppercase tracking-wider align-[1px]" style={{ backgroundColor: tc.bg, color: tc.fg }}>{m.tag}</span>
-                    <span className="mr-1.5 text-[10px] text-stone-500">r/{m.sub}</span>
-                    {m.text}
-                  </a>
-                );
-              })}
+              {memesContent}
             </div>
           </section>
         )}
