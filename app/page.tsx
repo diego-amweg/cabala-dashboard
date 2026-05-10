@@ -175,9 +175,9 @@ export default function CabalaDashboard() {
 
   let memesContent;
   if (memesLoading) {
-    memesContent = <p className="text-xs text-stone-400">trayendo posts de r/soccer y r/worldcup...</p>;
+    memesContent = <p className="text-xs text-stone-400">trayendo y procesando posts...</p>;
   } else if (memesError) {
-    memesContent = <p className="text-xs text-stone-400">no se pudo conectar con reddit. mostrara posts cuando vuelva la conexion.</p>;
+    memesContent = <p className="text-xs text-stone-400">no se pudo conectar con bluesky. los posts vuelven cuando vuelva la conexion.</p>;
   } else if (memes.length === 0) {
     memesContent = <p className="text-xs text-stone-400">sin posts por ahora.</p>;
   } else {
@@ -196,8 +196,8 @@ export default function CabalaDashboard() {
 
   let memesMeta;
   if (memesLoading) memesMeta = 'cargando...';
-  else if (memesError) memesMeta = 'reddit no respondió';
-  else memesMeta = 'desde reddit · refresca cada 5 min';
+  else if (memesError) memesMeta = 'bluesky no respondió';
+  else memesMeta = 'desde bluesky · clasificado por claude';
 
   return (
     <main className="min-h-screen bg-stone-50 text-stone-900 selection:bg-orange-200">
