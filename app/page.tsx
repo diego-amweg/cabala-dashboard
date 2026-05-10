@@ -34,7 +34,7 @@ const INITIAL_TEAMS: Team[] = [
   { code: 'ENG', name: 'Inglaterra', sentiment: 38, bg: '#fee2e2', fg: '#7f1d1d', bar: '#ef4444' },
 ];
 
-interface FeedItem { tag: 'meme' | 'polémica' | 'pelea' | 'viral'; text: string; when: string; score?: number; url?: string; sub?: string; }
+interface FeedItem { tag: 'meme' | 'polémica' | 'pelea' | 'viral'; text: string; when: string; score?: number; url?: string; author?: string; query?: string; }
 interface CalleItem { city: string; text: string; when?: string; }
 interface SufItem { code: string; label: string; text: string; }
 
@@ -187,7 +187,7 @@ export default function CabalaDashboard() {
         <a key={i} href={m.url} target="_blank" rel="noopener noreferrer" className="mb-1.5 block rounded-md bg-stone-100 px-2.5 py-2 text-xs leading-relaxed transition-colors last:mb-0 hover:bg-stone-200">
           <span className="float-right ml-2 font-mono text-[10px] tabular-nums text-stone-400">{m.when}</span>
           <span className="mr-1.5 inline-block rounded px-1.5 py-px text-[9px] font-medium uppercase tracking-wider align-[1px]" style={{ backgroundColor: tc.bg, color: tc.fg }}>{m.tag}</span>
-          <span className="mr-1.5 text-[10px] text-stone-500">r/{m.sub}</span>
+          <span className="mr-1.5 text-[10px] text-stone-500">@{m.author?.replace('.bsky.social', '')}</span>
           {m.text}
         </a>
       );
