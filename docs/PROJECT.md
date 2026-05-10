@@ -6,16 +6,20 @@ Plataforma personal para vivir el Mundial 2026 como fenómeno cultural total, no
 
 ## Estado del proyecto
 
-- **Sprint actual**: Sprint 0 — setup base
+- **Versión actual**: v0.3 — chat conversacional integrado
+- **Sprint completado**: 3b
+- **Próximo sprint**: 4 — módulos faltantes (Camino al Mundial, Viaje del hincha, AR/VR)
 - **Última actualización**: mayo 2026
-- **Días al kickoff**: ~32 (11 de junio de 2026)
+- **Días al kickoff**: ~31 (11 de junio de 2026)
 - **URL del repo**: https://github.com/diego-amweg/cabala-dashboard
-- **URL pública (preview)**: pendiente de confirmar
-- **URL pública (producción)**: pendiente de dominio propio
+- **URL pública**: https://cabala-dashboard.vercel.app
+- **URL pública con dominio propio**: pendiente Sprint 7
 
 ## Usuario primario
 
-- **Nombre**: Diego (`diego-amweg`)
+- **Nombre**: Diego
+- **GitHub**: `diego-amweg`
+- **Bluesky**: `diegoamweg.bsky.social`
 - **Ubicación**: Tostado, Santa Fe, Argentina
 - **Idioma**: español rioplatense
 - **Perfil futbolero**: no fanático, pero quiere vivir el Mundial inmersivamente
@@ -32,6 +36,7 @@ Reemplazar la experiencia fragmentada de "abrir 8 pestañas durante un partido" 
 - Trayectos de hinchas viajeros (vlogs, social posts)
 - Briefings y análisis generados por IA
 - Capa AR/VR para experiencias inmersivas
+- Asistente conversacional con contexto del dashboard
 
 ## Filosofía
 
@@ -43,74 +48,127 @@ Reemplazar la experiencia fragmentada de "abrir 8 pestañas durante un partido" 
 
 ## Arquitectura técnica
 
-### Stack
-- **Frontend**: Next.js 14 (App Router) + TypeScript + Tailwind CSS
-- **Hosting**: Vercel (Hobby plan inicialmente, Pro cuando sume tráfico)
-- **Base de datos**: Supabase (Postgres) — pendiente Sprint 1
-- **Cache**: Upstash Redis — pendiente Sprint 2
-- **IA**: Anthropic Claude API (Sonnet 4.6 para análisis a escala, Opus 4.7 para conversación contigo)
-- **Workers**: Vercel Cron Jobs
+### Stack en uso
 
-### Capas
-1. **Frontend**: dashboard configurable + chat con Claude
-2. **API layer**: serverless functions en Vercel
-3. **Procesamiento**: Claude API para sentiment, dedup, tagging
-4. **Storage**: Postgres (estado persistente) + Redis (cache de feeds)
-5. **Ingestion**: cron jobs pulleando fuentes externas a intervalos definidos
+- **Frontend**: Next.js 16.2 (App Router) + TypeScript + Tailwind CSS
+- **Hosting**: Vercel (Hobby plan, gratis)
+- **Base de datos**: ninguna por ahora (todo en cache en memoria); Supabase pendiente cuando haya estado persistente entre sesiones
+- **Cache**: en memoria del proceso serverless (JWT de Bluesky, enhancements de Claude); Upstash Redis pendiente para cache compartida entre instancias
+- **IA**: Anthropic Claude API
+  - `claude-haiku-4-5-20251001` para clasificación y traducción de posts en batch (barato, suficiente para tarea estructurada)
+  - `claude-sonnet-4-6` para conversación con el usuario (mejor naturalidad, ~$0.01/mensaje)
+- **Workers**: ninguno por ahora; los fetches se hacen on-demand desde el frontend cada 5 min
+
+### Estructura del repo
+
+```
+cabala-dashboard/
+├── app/
+│   ├── api/
+│   │   ├── chat/
+│   │   │   └── route.ts        # Claude conversacional (Sonnet 4.6)
+│   │   └── reddit/
+│   │       └── route.ts        # Bluesky search + Claude classify (nombre legacy)
+│   ├── layout.tsx              # Metadata global
+│   └── page.tsx                # Dashboard principal
+├── components/
+│   └── Chat.tsx                # Asistente flotante
+├── docs/
+│   ├── CLAUDE.md               # Instrucciones para Claude
+│   └── PROJECT.md              # Este documento
+├── public/                     # Assets estáticos
+└── (configs estándar Next.js)
+```
+
+### Variables de entorno (Vercel)
+
+- `BLUESKY_HANDLE` — handle completo del usuario en Bluesky
+- `BLUESKY_APP_PASSWORD` — App Password generada en Bluesky Settings
+- `ANTHROPIC_API_KEY` — API key de console.anthropic.com
 
 ## Catálogo de módulos
 
-| # | Módulo | Estado | Sprint |
-|---|--------|--------|--------|
-| 1 | Ojo de Dios (mapa de sedes) | mock | 1 |
-| 2 | Sentimiento por selección | mock | 1 |
-| 3 | Sufrimiento compartido | mock | 1 |
-| 4 | Memes y polémicas | mock | 2 |
-| 5 | En las calles | mock | 2 |
-| 6 | Camino al Mundial | diseñado | 3 |
-| 7 | Viaje del hincha | diseñado | 3 |
-| 8 | Capa AR/VR | diseñado | 4 |
-| 9 | Asistente Claude | diseñado | 2 |
-| 10 | Briefings automáticos | diseñado | 3 |
+| # | Módulo | Estado | Datos |
+|---|--------|--------|-------|
+| 1 | Ojo de Dios (mapa de sedes) | vivo | simulados |
+| 2 | Sentimiento por selección | vivo | simulados |
+| 3 | Sufrimiento compartido | vivo | simulados |
+| 4 | Memes y polémicas | vivo | reales (Bluesky + Claude) |
+| 5 | En las calles | vivo | simulados |
+| 6 | Camino al Mundial | pendiente | — |
+| 7 | Viaje del hincha | pendiente | — |
+| 8 | Capa AR/VR | pendiente | — |
+| 9 | Asistente Claude | vivo | — |
+| 10 | Briefings automáticos | pendiente | — |
 
-Estados: `diseñado` → `mock` (con datos simulados) → `vivo` (con datos reales)
+Estados: `pendiente` → `diseñado` → `vivo (mock)` → `vivo (real)`
 
-## Fuentes de datos planeadas
+## Fuentes de datos
 
-| Fuente | API | Costo | Sprint |
-|--------|-----|-------|--------|
-| Reddit | Reddit API | Gratis | 1 |
-| YouTube | YouTube Data v3 | Gratis | 2 |
-| Bluesky | AT Protocol | Gratis | 2 |
-| Datos del torneo | football-data.org | $25/mes | 2 |
-| Noticias | GDELT Project | Gratis | 3 |
-| TikTok | Apify | ~$50/mes | 3 |
-| Google Trends | unofficial wrappers | Gratis | 3 |
-| Snap Map | embed iframe | Gratis | 4 |
-| FIFA+ | scraping cuidadoso | Gratis (gris) | 4 |
+| Fuente | Estado | Costo | Notas |
+|--------|--------|-------|-------|
+| Bluesky (search posts) | conectada | gratis | App Password auth, JWT cacheado 14min |
+| Anthropic Claude | conectada | ~$3-5/día con uso moderado | Haiku clasificación, Sonnet chat |
+| Reddit | descartada | — | Self-service API cerrado en nov 2025 (ver ADR) |
+| Google Trends | pendiente | gratis | Para sentimiento real (Sprint 5) |
+| NewsAPI / GDELT | pendiente | gratis (GDELT) | Para módulo "Calle" (Sprint 5) |
+| YouTube Data API | pendiente | gratis | Para "Viaje del hincha" (Sprint 4) |
+| football-data.org | pendiente | $25/mes | Para datos del torneo (Sprint 5) |
+| FIFA+ | pendiente | gratis (embed/scraping) | Para AR/VR layer (Sprint 4) |
 
-**Decisión deliberada**: NO usar X API (costo prohibitivo + riesgos de scraping). Reemplazado por Bluesky + Reddit + Google Trends.
+## Costos operativos
 
-## Costos operativos estimados
+### Actuales (post Sprint 3b)
+- Vercel Hobby: $0
+- Bluesky API: $0
+- Anthropic Claude: ~$3-5/mes con uso personal moderado
+- **Total: ~$5/mes**
 
-- **Sprint 0-1 (mock data)**: ~$0/mes
-- **Sprint 2 (primeras fuentes reales)**: ~$50/mes
-- **Sprint 3 (todas las fuentes)**: ~$150-250/mes
-- **Producción durante el Mundial**: ~$300-500/mes
+### Estimación para el Mundial
+- Vercel Hobby alcanza salvo que se abra al público
+- Anthropic: $30-60/mes con uso intensivo durante el torneo
+- football-data.org: $25/mes
+- Dominio: $20/año amortizado a ~$2/mes
+- **Total estimado: ~$60-90/mes durante junio-julio 2026**
 
 ## Decisiones tomadas (ADR log)
 
-1. **Nombre del producto**: Cábala. Elegido por profundidad cultural en fútbol latinoamericano y diferenciación clara.
-2. **Dominio inicial**: subdominio de Vercel (`*.vercel.app`). Dominio propio se decide en Sprint 3.
+1. **Nombre del producto**: Cábala. Profundidad cultural en fútbol latinoamericano y diferenciación clara.
+2. **Dominio inicial**: subdominio de Vercel (`*.vercel.app`). Dominio propio se decide en Sprint 7.
 3. **Modelo de monetización**: ninguno por ahora. Si se abre al público, suscripción mensual con tier gratuito limitado.
-4. **Sin X API**: descartada por costos y riesgos legales del scraping. Reemplazada por Bluesky + Reddit + Google Trends.
+4. **Sin X API**: descartada por costos y riesgos legales del scraping. Reemplazada por Bluesky.
 5. **Idioma del producto**: español. Inglés solo si se internacionaliza.
 6. **Stack frontend**: Next.js + Tailwind. Elegido por simplicidad de deploy en Vercel y curva amigable para usuario no técnico.
+7. **Pivot Reddit → Bluesky** (Sprint 2): Reddit cerró self-service API access en noviembre 2025 bajo Responsible Builder Policy. Aprobación manual tarda semanas e incierta, y para nuestro caso podría ser rechazada. Bluesky tiene API abierta con autenticación simple (App Password, sin aprobación), comunidades futboleras crecientes en español, y cero fricción de setup.
+8. **Modelo de IA por tarea** (Sprint 3a/3b): Haiku 4.5 para clasificación y traducción (más barato, suficiente para tarea estructurada). Sonnet 4.6 para chat conversacional (mejor naturalidad, vale el costo extra de ~$0.01/mensaje).
+9. **Cache de enhancements en memoria** (Sprint 3a): los posts ya procesados por Claude no se re-procesan, viven en memoria de la función serverless. Acepta que cold starts pierdan cache. Para persistencia real necesitaríamos Supabase o Redis (sprint futuro).
+10. **Path API misleading** (deuda técnica): el endpoint sigue en `/api/reddit/route.ts` aunque consume Bluesky. Se renombra a `/api/feed` en Sprint 7.
+11. **Componente Chat extraído** (Sprint 3b): extraído a `components/Chat.tsx` para evitar que `page.tsx` siga creciendo. Es el primer componente del proyecto fuera de `app/`.
+12. **Sin streaming en el chat** (Sprint 3b): respuestas no streameadas para simplicidad inicial. Streaming queda para sprint de polish si se nota como problema de UX.
+
+## Cronograma realizado
+
+- **Sprint 0** (mayo 2026): cuentas creadas, deploy pipeline GitHub→Vercel, primer "hola mundo" en producción.
+- **Sprint 1** (mayo 2026): dashboard con 5 módulos y datos simulados, branding Cábala aplicado, módulos toggleables, tribu configurable.
+- **Sprint 2** (mayo 2026): intento de integración con Reddit falla por cambio de política → pivot a Bluesky con App Password auth → módulo de memes muestra datos reales del torneo.
+- **Sprint 3a** (mayo 2026): Claude API integrada para clasificación (cinco categorías), traducción al español rioplatense, scoring de relevancia, cache de enhancements para reducir costos.
+- **Sprint 3b** (mayo 2026): asistente conversacional flotante con contexto del dashboard. Sonnet 4.6, manejo de errores, UI con tipping indicator, sugerencias en estado vacío.
+
+## Próximos sprints (orden definido por Diego)
+
+- **Sprint 4** — *los módulos que faltan*: Camino al Mundial (timeline narrativo de eliminatorias por selección), Viaje del hincha (vlogs y posts de hinchas viajando), Capa AR/VR (orquestador para experiencias inmersivas con FIFA+ y similares).
+- **Sprint 5** — *datos reales en los módulos simulados*: Ojo de Dios (NewsAPI/GDELT por ciudad sede), Sentimiento (Google Trends + análisis de Bluesky con Claude), Sufrimiento (cruce de sentiment + posts simultáneos durante partidos), En las calles (NewsAPI por ciudad sede en tiempo real).
+- **Sprint 6** — *tools para el asistente Claude*: que pueda configurar el dashboard (toggle de módulos, set de tribu, filtros), destacar contenido específico, generar briefings on-demand. Pasamos del "asistente que describe" al "asistente que ejecuta".
+- **Sprint 7** — *polish y dominio*: comprar `cabala.app`, briefings automáticos por la mañana y antes de cada partido, sistema de alertas configurable, renombrar `/api/reddit` a `/api/feed`, ajustes de estética final.
+
+Después de Sprint 7 entramos en modo "uso del producto durante el Mundial" con iteraciones cortas según lo que pida la realidad del torneo.
 
 ## Convenciones
 
 - **Nombre del repo**: `cabala-dashboard` (sin tilde por restricción de GitHub)
-- **Commits**: mensajes en español, presente, descriptivos. Ej: "agrega módulo de mapa con datos mock"
-- **Branches**: trabajamos sobre `main` directamente en esta etapa. Si crece el equipo, sumamos PRs.
-- **Archivos**: kebab-case para nombres (`fan-journey.tsx`, no `FanJourney.tsx`)
+- **Commits**: mensajes en español, presente, descriptivos
+- **Branches**: trabajamos sobre `main` directamente; PRs se incorporan si crece el equipo
+- **Archivos**: kebab-case para nombres
 - **Componentes React**: PascalCase para el nombre del componente, kebab-case para el archivo
+- **API keys**: nunca en commits; van en `.env.local` (gitignored) y en Vercel Environment Variables
+- **Importes en `app/`**: alias `@/components/...` (configurado en tsconfig.json)
