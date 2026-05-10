@@ -11,31 +11,29 @@ interface BlueskyPost {
   replyCount?: number;
 }
 
-type Tag = 'meme' | 'polémica' | 'pelea' | 'viral';
+type Tag = 'meme' | 'polémica' | 'pelea' | 'viral' | 'noticia';
 
 interface FeedItem {
   tag: Tag;
   text: string;
+  originalText?: string;
   when: string;
   score: number;
+  relevance?: number;
   url: string;
   author: string;
   query: string;
 }
 
 let cachedJwt: { jwt: string; expiresAt: number } | null = null;
+const enhancementCache = new Map<string, { tag: Tag; text: string; relevance: number }>();
 
 async function getJWT(): Promise<{ jwt: string | null; error?: string }> {
-  if (cachedJwt && cachedJwt.expiresAt > Date.now()) {
-    return { jwt: cachedJwt.jwt };
-  }
+  if (cachedJwt && cachedJwt.expiresAt > Date.now()) return { jwt: cachedJwt.jwt };
 
   const handle = process.env.BLUESKY_HANDLE;
   const password = process.env.BLUESKY_APP_PASSWORD;
-
-  if (!handle || !password) {
-    return { jwt: null, error: 'env vars BLUESKY_HANDLE o BLUESKY_APP_PASSWORD faltantes en Vercel' };
-  }
+  if (!handle || !password) return { jwt: null, error: 'env vars BLUESKY_HANDLE o BLUESKY_APP_PASSWORD faltantes' };
 
   try {
     const res = await fetch('https://bsky.social/xrpc/com.atproto.server.createSession', {
@@ -45,33 +43,15 @@ async function getJWT(): Promise<{ jwt: string | null; error?: string }> {
       cache: 'no-store',
     });
 
-    if (!res.ok) {
-      const text = await res.text();
-      return { jwt: null, error: `auth HTTP ${res.status}: ${text.slice(0, 200)}` };
-    }
-
+    if (!res.ok) return { jwt: null, error: `auth HTTP ${res.status}` };
     const data = await res.json();
-    if (!data.accessJwt) {
-      return { jwt: null, error: 'response sin accessJwt' };
-    }
+    if (!data.accessJwt) return { jwt: null, error: 'response sin accessJwt' };
 
-    cachedJwt = {
-      jwt: data.accessJwt,
-      expiresAt: Date.now() + 14 * 60 * 1000,
-    };
-
+    cachedJwt = { jwt: data.accessJwt, expiresAt: Date.now() + 14 * 60 * 1000 };
     return { jwt: cachedJwt.jwt };
   } catch (e) {
     return { jwt: null, error: e instanceof Error ? e.message : 'unknown' };
   }
-}
-
-function classify(text: string): Tag {
-  const t = text.toLowerCase();
-  if (/😂|🤣|💀|🤡/.test(text) || t.includes('jaja') || t.includes(' lol') || t.includes('meme')) return 'meme';
-  if (t.includes('var') || t.includes('árbitro') || t.includes('arbitro') || t.includes('penal') || t.includes('referee')) return 'polémica';
-  if (t.includes('pelea') || t.includes('fight') || t.includes('insult')) return 'pelea';
-  return 'viral';
 }
 
 function timeAgo(iso: string): string {
@@ -89,23 +69,15 @@ function postToUrl(post: BlueskyPost): string {
 
 async function searchQuery(query: string, jwt: string): Promise<{ items: FeedItem[]; status: number; error?: string }> {
   const url = `https://bsky.social/xrpc/app.bsky.feed.searchPosts?q=${encodeURIComponent(query)}&limit=25&sort=top`;
-
   try {
-    const res = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${jwt}` },
-      cache: 'no-store',
-    });
-
-    if (!res.ok) {
-      const text = await res.text();
-      return { items: [], status: res.status, error: `HTTP ${res.status}: ${text.slice(0, 150)}` };
-    }
+    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${jwt}` }, cache: 'no-store' });
+    if (!res.ok) return { items: [], status: res.status, error: `HTTP ${res.status}` };
 
     const data: { posts: BlueskyPost[] } = await res.json();
     const items: FeedItem[] = (data.posts || []).map(post => {
       const score = (post.likeCount || 0) + (post.repostCount || 0) * 2 + (post.replyCount || 0);
       return {
-        tag: classify(post.record.text),
+        tag: 'viral',
         text: post.record.text,
         when: timeAgo(post.indexedAt || post.record.createdAt),
         score,
@@ -114,39 +86,104 @@ async function searchQuery(query: string, jwt: string): Promise<{ items: FeedIte
         query,
       };
     });
-
     return { items, status: 200 };
   } catch (e) {
     return { items: [], status: 0, error: e instanceof Error ? e.message : 'unknown' };
   }
 }
 
+async function enhanceWithClaude(posts: FeedItem[]): Promise<{ enhanced: FeedItem[]; status: string }> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return { enhanced: posts, status: 'no api key' };
+  if (posts.length === 0) return { enhanced: posts, status: 'no posts' };
+
+  const toProcess = posts.filter(p => !enhancementCache.has(p.url));
+  if (toProcess.length === 0) {
+    const enhanced = posts.map(p => {
+      const cached = enhancementCache.get(p.url);
+      return cached ? { ...p, ...cached, originalText: p.text, text: cached.text } : p;
+    });
+    return { enhanced, status: 'all cached' };
+  }
+
+  const prompt = `Sos un asistente que clasifica y traduce posts de redes sociales sobre el Mundial de Fútbol 2026 para una plataforma argentina.
+
+Posts:
+${toProcess.map((p, i) => `[${i}] ${p.text.slice(0, 400)}`).join('\n\n')}
+
+Devolvé un array JSON (sin texto adicional, sin markdown) con un objeto por post en el mismo orden, con esta estructura:
+{ "i": <índice>, "tag": "meme"|"polémica"|"pelea"|"viral"|"noticia", "es": "<traducción al español rioplatense, máximo 280 caracteres>", "rel": <0-100> }
+
+Reglas:
+- "meme": humor, chistes, parodias, ironía
+- "polémica": árbitros, VAR, decisiones controvertidas, quejas
+- "pelea": conflictos entre fanáticos o cuentas, peleas en redes
+- "viral": contenido masivo de impacto emocional pero no humorístico
+- "noticia": información concreta, anuncios, datos
+- "rel": qué tan relevante es para vivir el Mundial intensamente (0=irrelevante, 100=imperdible)
+- Si el post ya está en español, copialo en "es" igual o ligeramente acomodado
+- Acortá si hace falta para que entre en 280 caracteres`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'content-type': 'application/json',
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 4000,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      return { enhanced: posts, status: `claude HTTP ${res.status}: ${errText.slice(0, 100)}` };
+    }
+
+    const data = await res.json();
+    const text = data.content[0].text.trim();
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) return { enhanced: posts, status: 'no json in response' };
+
+    const enhancements: Array<{ i: number; tag: Tag; es: string; rel: number }> = JSON.parse(jsonMatch[0]);
+
+    enhancements.forEach(e => {
+      const post = toProcess[e.i];
+      if (post) {
+        enhancementCache.set(post.url, { tag: e.tag, text: e.es, relevance: e.rel });
+      }
+    });
+
+    const enhanced = posts.map(p => {
+      const cached = enhancementCache.get(p.url);
+      return cached ? { ...p, tag: cached.tag, originalText: p.text, text: cached.text, relevance: cached.relevance } : p;
+    });
+
+    return { enhanced, status: `enhanced ${toProcess.length} new, ${posts.length - toProcess.length} cached` };
+  } catch (e) {
+    return { enhanced: posts, status: e instanceof Error ? e.message : 'unknown' };
+  }
+}
+
 export async function GET() {
   const { jwt, error: authError } = await getJWT();
-
   if (!jwt) {
-    return NextResponse.json({
-      items: [],
-      updatedAt: Date.now(),
-      debug: [{ step: 'auth', error: authError }],
-    });
+    return NextResponse.json({ items: [], updatedAt: Date.now(), debug: [{ step: 'auth', error: authError }] });
   }
 
   const queries = ['mundial 2026', 'world cup 2026', 'fifa worldcup'];
   const all: FeedItem[] = [];
-  const debug: Array<{ step: string; query?: string; status?: number; count?: number; error?: string }> = [
+  const debug: Array<{ step: string; query?: string; status?: number | string; count?: number; error?: string }> = [
     { step: 'auth', status: 200 },
   ];
 
   for (const q of queries) {
     const result = await searchQuery(q, jwt);
-    debug.push({
-      step: 'search',
-      query: q,
-      status: result.status,
-      count: result.items.length,
-      error: result.error,
-    });
+    debug.push({ step: 'search', query: q, status: result.status, count: result.items.length, error: result.error });
     all.push(...result.items);
   }
 
@@ -157,11 +194,12 @@ export async function GET() {
     return true;
   });
 
-  unique.sort((a, b) => b.score - a.score);
+  const top = unique.sort((a, b) => b.score - a.score).slice(0, 12);
 
-  return NextResponse.json({
-    items: unique.slice(0, 12),
-    updatedAt: Date.now(),
-    debug,
-  });
+  const { enhanced, status: enhanceStatus } = await enhanceWithClaude(top);
+  debug.push({ step: 'enhance', status: enhanceStatus });
+
+  enhanced.sort((a, b) => (b.relevance ?? 0) - (a.relevance ?? 0));
+
+  return NextResponse.json({ items: enhanced, updatedAt: Date.now(), debug });
 }
