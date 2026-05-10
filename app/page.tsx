@@ -21,14 +21,7 @@ const CITIES = [
   { id: 'cdmx', name: 'CDMX', x: 320, y: 252 },
 ];
 
-interface Team {
-  code: string;
-  name: string;
-  sentiment: number;
-  bg: string;
-  fg: string;
-  bar: string;
-}
+interface Team { code: string; name: string; sentiment: number; bg: string; fg: string; bar: string; }
 
 const INITIAL_TEAMS: Team[] = [
   { code: 'ARG', name: 'Argentina', sentiment: 88, bg: '#dbeafe', fg: '#1e3a8a', bar: '#3b82f6' },
@@ -41,32 +34,9 @@ const INITIAL_TEAMS: Team[] = [
   { code: 'ENG', name: 'Inglaterra', sentiment: 38, bg: '#fee2e2', fg: '#7f1d1d', bar: '#ef4444' },
 ];
 
-interface MemeItem {
-  tag: 'meme' | 'polémica' | 'pelea' | 'viral';
-  text: string;
-  when?: string;
-}
-
-const MEMES: MemeItem[] = [
-  { tag: 'meme', text: '"el abuelo de Mbappé también la falla" — 2.4M de RTs en 1h' },
-  { tag: 'polémica', text: 'VAR no cobra penal claro a México — #VARRobada trending #1' },
-  { tag: 'meme', text: 'el peinado del DT japonés es ya un filtro de TikTok' },
-  { tag: 'pelea', text: 'dos hinchas portugueses se sacaron chispas en un pub de Atlanta' },
-  { tag: 'viral', text: 'hincha mexicano llora con mariachi afuera del MetLife — 8M views' },
-  { tag: 'meme', text: 'plantilla "Mbappé acomodando la pelota" se viralizó en 14 idiomas' },
-  { tag: 'polémica', text: 'himno mal tocado para Croacia — comentarios cruzados de la FIFA' },
-  { tag: 'viral', text: 'TikTok del banderazo argentino en Miami: 12M views, 1.4M likes' },
-  { tag: 'pelea', text: 'hilo en X sobre arbitraje desató bardo Brasil vs Argentina otra vez' },
-  { tag: 'meme', text: 'el "what a save" del Rocket League invade reacciones del torneo' },
-  { tag: 'viral', text: 'abuelo de 92 cumple sueño de ver a Marruecos — TikTok #1 del día' },
-  { tag: 'polémica', text: 'jugador belga insulta a cámara — ya hay debate sobre suspensión' },
-];
-
-interface CalleItem {
-  city: string;
-  text: string;
-  when?: string;
-}
+interface FeedItem { tag: 'meme' | 'polémica' | 'pelea' | 'viral'; text: string; when: string; score?: number; url?: string; sub?: string; }
+interface CalleItem { city: string; text: string; when?: string; }
+interface SufItem { code: string; label: string; text: string; }
 
 const CALLE: CalleItem[] = [
   { city: 'Kansas City', text: 'tailgate enorme afuera del Arrowhead. mexicanos cocinando pibil al lado de los gringos haciendo brisket' },
@@ -87,12 +57,6 @@ const CALLE: CalleItem[] = [
   { city: 'Seattle', text: 'caravana ciclista pro-USMNT llegó hasta Pike Place, drum line incluido' },
 ];
 
-interface SufItem {
-  code: string;
-  label: string;
-  text: string;
-}
-
 const SUF: SufItem[] = [
   { code: 'ARG', label: 'Argentina', text: '37 millones conteniendo la respiración. cuadras enteras vacías' },
   { code: 'BRA', label: 'Brasil', text: 'rating histórico de TV: 78% de share nacional. Globo dispara' },
@@ -110,12 +74,14 @@ const TAG_COLORS: Record<string, { bg: string; fg: string }> = {
 };
 
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
-const pick = <T,>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
-const fmtMin = (sec: number) => {
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}' +${s < 10 ? '0' + s : s}''`;
-};
+const fmtMin = (sec: number) => `${Math.floor(sec / 60)}' +${(sec % 60) < 10 ? '0' + (sec % 60) : (sec % 60)}''`;
+
+function pickFresh<T>(pool: T[], current: T[], keyFn: (i: T) => string): T {
+  const used = new Set(current.map(keyFn));
+  const avail = pool.filter(i => !used.has(keyFn(i)));
+  const source = avail.length ? avail : pool;
+  return source[Math.floor(Math.random() * source.length)];
+}
 
 const ALL_MODULES = ['map', 'senti', 'suf', 'memes', 'calle'] as const;
 type ModuleId = typeof ALL_MODULES[number];
@@ -129,12 +95,9 @@ export default function CabalaDashboard() {
     CITIES.forEach(c => { obj[c.id] = 30 + Math.random() * 60; });
     return obj;
   });
-  const [memesShown, setMemesShown] = useState<MemeItem[]>([
-    { ...MEMES[0], when: 'recién' },
-    { ...MEMES[3], when: '47s' },
-    { ...MEMES[7], when: '1m' },
-    { ...MEMES[1], when: '2m' },
-  ]);
+  const [memes, setMemes] = useState<FeedItem[]>([]);
+  const [memesLoading, setMemesLoading] = useState(true);
+  const [memesError, setMemesError] = useState(false);
   const [calleShown, setCalleShown] = useState<CalleItem[]>([
     { ...CALLE[0], when: 'ahora' },
     { ...CALLE[2], when: '30s' },
@@ -145,28 +108,46 @@ export default function CabalaDashboard() {
   const [tribe, setTribe] = useState<Set<string>>(new Set(['ARG']));
 
   useEffect(() => {
+    const fetchMemes = async () => {
+      try {
+        const res = await fetch('/api/reddit');
+        if (!res.ok) throw new Error('failed');
+        const data = await res.json();
+        if (data.items && data.items.length > 0) {
+          setMemes(data.items);
+          setMemesError(false);
+        } else {
+          setMemesError(true);
+        }
+      } catch {
+        setMemesError(true);
+      } finally {
+        setMemesLoading(false);
+      }
+    };
+    fetchMemes();
+    const refreshInterval = setInterval(fetchMemes, 5 * 60 * 1000);
+    return () => clearInterval(refreshInterval);
+  }, []);
+
+  useEffect(() => {
     const interval = setInterval(() => {
       setPulse(p => Math.max(40, Math.min(98, p + rand(-4, 5))));
-      setLiveSec(s => {
-        const next = s + 2;
-        return next >= 90 * 60 ? 60 : next;
-      });
+      setLiveSec(s => (s + 2 >= 90 * 60 ? 60 : s + 2));
       setTeams(prev => prev.map(t => ({
         ...t,
         sentiment: Math.max(15, Math.min(95, t.sentiment + rand(-2.5, 2.8))),
       })));
       setIntensity(prev => {
         const next: Record<string, number> = {};
-        for (const k in prev) {
-          next[k] = Math.max(10, Math.min(100, prev[k] + rand(-8, 10)));
-        }
+        for (const k in prev) next[k] = Math.max(10, Math.min(100, prev[k] + rand(-8, 10)));
         return next;
       });
-      if (Math.random() > 0.45) {
-        setMemesShown(prev => [{ ...pick(MEMES), when: 'ahora' }, ...prev.slice(0, 3)]);
-      }
       if (Math.random() > 0.5) {
-        setCalleShown(prev => [{ ...pick(CALLE), when: 'ahora' }, ...prev.slice(0, 3)]);
+        setCalleShown(prev => [
+          { ...pickFresh(CALLE, prev, c => c.city + c.text), when: 'ahora' },
+          ...prev.slice(0, 3),
+        ]);
       }
     }, 2400);
     return () => clearInterval(interval);
@@ -235,7 +216,9 @@ export default function CabalaDashboard() {
                 key={m.id}
                 onClick={() => toggleMod(m.id)}
                 className={`rounded-md border px-2.5 py-1 text-xs transition-colors ${
-                  on ? 'border-stone-300 bg-stone-100 text-stone-900' : 'border-stone-200 text-stone-400 hover:border-stone-300'
+                  on
+                    ? 'border-orange-300 bg-orange-50 text-orange-950'
+                    : 'border-stone-200 text-stone-400 hover:border-stone-300'
                 }`}
               >
                 {m.label}
@@ -338,17 +321,29 @@ export default function CabalaDashboard() {
           <section className="mt-3">
             <div className="mb-1.5 flex items-baseline justify-between">
               <h2 className="text-xs font-medium tracking-wide text-stone-700">memes, peleas y polémicas</h2>
-              <span className="text-[10px] text-stone-400">streams agregados</span>
+              <span className="text-[10px] text-stone-400">
+                {memesLoading ? 'cargando...' : memesError ? 'reddit no respondió' : 'desde reddit · refresca cada 5 min'}
+              </span>
             </div>
             <div className="rounded-xl border border-stone-200 bg-white p-3.5">
-              {memesShown.map((m, i) => {
+              {memesLoading && <p className="text-xs text-stone-400">trayendo posts de r/soccer y r/worldcup...</p>}
+              {!memesLoading && memesError && <p className="text-xs text-stone-400">no se pudo conectar con reddit. mostrará posts cuando vuelva la conexión.</p>}
+              {!memesLoading && !memesError && memes.length === 0 && <p className="text-xs text-stone-400">sin posts por ahora.</p>}
+              {memes.map((m, i) => {
                 const tc = TAG_COLORS[m.tag];
                 return (
-                  <div key={i} className="mb-1.5 rounded-md bg-stone-100 px-2.5 py-2 text-xs leading-relaxed last:mb-0">
+                  
+                    key={i}
+                    href={m.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mb-1.5 block rounded-md bg-stone-100 px-2.5 py-2 text-xs leading-relaxed transition-colors last:mb-0 hover:bg-stone-200"
+                  >
                     <span className="float-right ml-2 font-mono text-[10px] tabular-nums text-stone-400">{m.when}</span>
                     <span className="mr-1.5 inline-block rounded px-1.5 py-px text-[9px] font-medium uppercase tracking-wider align-[1px]" style={{ backgroundColor: tc.bg, color: tc.fg }}>{m.tag}</span>
+                    <span className="mr-1.5 text-[10px] text-stone-500">r/{m.sub}</span>
                     {m.text}
-                  </div>
+                  </a>
                 );
               })}
             </div>
@@ -374,7 +369,7 @@ export default function CabalaDashboard() {
         )}
 
         <footer className="mt-12 border-t border-stone-200 pt-4 text-center text-[10px] text-stone-400">
-          Cábala v0.1 · datos simulados · construido por Diego con asistencia de Claude
+          Cábala v0.1 · datos parcialmente reales · construido por Diego con asistencia de Claude
         </footer>
       </div>
     </main>
