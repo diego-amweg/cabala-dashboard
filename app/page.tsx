@@ -6,8 +6,10 @@ import RoadToWorldCup from '@/components/RoadToWorldCup';
 import FanJourney from '@/components/FanJourney';
 import ImmersiveLayer from '@/components/ImmersiveLayer';
 import Calendar from '@/components/Calendar';
+import MemeCard from '@/components/MemeCard';
 
 const CURRENT_MATCH = 'octavos · México 1-1 Países Bajos · MetLife';
+const NEXT_MATCH = { teams: 'Brasil vs Croacia', date: 'vie 26 jun', time: '13:00 ART', venue: 'NRG · Houston' };
 
 const CITIES = [
   { id: 'van', name: 'Vancouver', x: 90, y: 30 },
@@ -41,7 +43,7 @@ const INITIAL_TEAMS: Team[] = [
   { code: 'ENG', name: 'Inglaterra', sentiment: 38, bg: '#fee2e2', fg: '#7f1d1d', bar: '#ef4444' },
 ];
 
-interface FeedItem { tag: 'meme' | 'polémica' | 'pelea' | 'viral' | 'noticia'; text: string; when: string; score?: number; url?: string; author?: string; query?: string; relevance?: number; }
+interface FeedItem { tag: 'meme' | 'polémica' | 'pelea' | 'viral' | 'noticia'; text: string; when: string; score?: number; url?: string; author?: string; query?: string; relevance?: number; imageUrl?: string; }
 interface CalleItem { city: string; text: string; when?: string; }
 interface SufItem { code: string; label: string; text: string; }
 
@@ -72,14 +74,6 @@ const SUF: SufItem[] = [
   { code: 'MEX', label: 'México', text: 'CDMX paralizada. el Zócalo se transformó en estadio gigante' },
   { code: 'JPN', label: 'Japón', text: 'cánticos sincronizados desde Tokio hasta el MetLife. 95k cantando' },
 ];
-
-const TAG_COLORS: Record<string, { bg: string; fg: string }> = {
-  'meme':     { bg: '#fef3c7', fg: '#78350f' },
-  'polémica': { bg: '#fee2e2', fg: '#7f1d1d' },
-  'pelea':    { bg: '#fee2e2', fg: '#7f1d1d' },
-  'viral':    { bg: '#ede9fe', fg: '#4c1d95' },
-  'noticia':  { bg: '#dbeafe', fg: '#1e3a8a' },
-};
 
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
 const fmtMin = (sec: number) => `${Math.floor(sec / 60)}' +${(sec % 60) < 10 ? '0' + (sec % 60) : (sec % 60)}''`;
@@ -183,23 +177,29 @@ export default function CabalaDashboard() {
 
   let memesContent;
   if (memesLoading) {
-    memesContent = <p className="text-xs text-stone-400">trayendo y procesando posts...</p>;
+    memesContent = <p className="px-2 text-xs text-stone-400">trayendo y procesando posts...</p>;
   } else if (memesError) {
-    memesContent = <p className="text-xs text-stone-400">no se pudo conectar con bluesky.</p>;
+    memesContent = <p className="px-2 text-xs text-stone-400">no se pudo conectar con bluesky.</p>;
   } else if (memes.length === 0) {
-    memesContent = <p className="text-xs text-stone-400">sin posts por ahora.</p>;
+    memesContent = <p className="px-2 text-xs text-stone-400">sin posts por ahora.</p>;
   } else {
-    memesContent = memes.map((m, i) => {
-      const tc = TAG_COLORS[m.tag] || TAG_COLORS.viral;
-      return (
-        <a key={i} href={m.url} target="_blank" rel="noopener noreferrer" className="mb-1.5 block rounded-md bg-stone-100 px-2.5 py-2 text-xs leading-relaxed transition-colors last:mb-0 hover:bg-stone-200">
-          <span className="float-right ml-2 font-mono text-[10px] tabular-nums text-stone-400">{m.when}</span>
-          <span className="mr-1.5 inline-block rounded px-1.5 py-px text-[9px] font-medium uppercase tracking-wider align-[1px]" style={{ backgroundColor: tc.bg, color: tc.fg }}>{m.tag}</span>
-          <span className="mr-1.5 text-[10px] text-stone-500">@{m.author?.replace('.bsky.social', '')}</span>
-          {m.text}
-        </a>
-      );
-    });
+    memesContent = (
+      <div className="-mx-3 flex gap-3 overflow-x-auto px-3 pb-2 snap-x">
+        {memes.map((m, i) => (
+          <MemeCard
+            key={i}
+            item={{
+              tag: m.tag,
+              text: m.text,
+              when: m.when,
+              url: m.url,
+              author: m.author,
+              imageUrl: m.imageUrl,
+            }}
+          />
+        ))}
+      </div>
+    );
   }
 
   let memesMeta;
@@ -239,6 +239,13 @@ export default function CabalaDashboard() {
           </span>
           <span>{CURRENT_MATCH}</span>
           <span className="ml-auto font-mono text-xs tabular-nums text-stone-500">{fmtMin(liveSec)}</span>
+        </div>
+
+        <div className="mt-2 flex items-center gap-3 rounded-md border border-stone-200 bg-white px-4 py-2 text-xs">
+          <span className="inline-flex items-center gap-1.5 rounded bg-stone-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-stone-600">próximo</span>
+          <span className="font-medium text-stone-900">{NEXT_MATCH.teams}</span>
+          <span className="text-stone-500">· {NEXT_MATCH.date} · {NEXT_MATCH.time}</span>
+          <span className="ml-auto truncate text-[10px] text-stone-400">{NEXT_MATCH.venue}</span>
         </div>
 
         <div className="mt-6 flex flex-wrap gap-1.5">
@@ -352,7 +359,7 @@ export default function CabalaDashboard() {
               <h2 className="text-xs font-medium tracking-wide text-stone-700">memes, peleas y polémicas</h2>
               <span className="text-[10px] text-stone-400">{memesMeta}</span>
             </div>
-            <div className="rounded-xl border border-stone-200 bg-white p-3.5">
+            <div className="rounded-xl border border-stone-200 bg-white p-3">
               {memesContent}
             </div>
           </section>
@@ -390,7 +397,7 @@ export default function CabalaDashboard() {
           <section className="mt-3">
             <div className="mb-1.5 flex items-baseline justify-between">
               <h2 className="text-xs font-medium tracking-wide text-stone-700">Calendario del Mundial</h2>
-              <span className="text-[10px] text-stone-400">próximos partidos</span>
+              <span className="text-[10px] text-stone-400">agrupado por día</span>
             </div>
             <Calendar />
           </section>
@@ -417,7 +424,7 @@ export default function CabalaDashboard() {
         )}
 
         <footer className="mt-12 border-t border-stone-200 pt-4 text-center text-[10px] text-stone-400">
-          Cábala v0.7 · sprint 4d-1 · construido por Diego con asistencia de Claude
+          Cábala v0.8 · sprint 4d-1.5 · construido por Diego con asistencia de Claude
         </footer>
       </div>
       <Chat context={{ memes, tribe: tribeArray, activeMods: Array.from(activeMods) }} />
