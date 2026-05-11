@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Chat from '@/components/Chat';
 import RoadToWorldCup from '@/components/RoadToWorldCup';
+import FanJourney from '@/components/FanJourney';
 
 const CITIES = [
   { id: 'van', name: 'Vancouver', x: 90, y: 30 },
@@ -86,7 +87,7 @@ function pickFresh<T>(pool: T[], current: T[], keyFn: (i: T) => string): T {
   return source[Math.floor(Math.random() * source.length)];
 }
 
-const ALL_MODULES = ['map', 'senti', 'suf', 'memes', 'calle', 'road'] as const;
+const ALL_MODULES = ['map', 'senti', 'suf', 'memes', 'calle', 'road', 'journey'] as const;
 type ModuleId = typeof ALL_MODULES[number];
 
 export default function CabalaDashboard() {
@@ -241,6 +242,7 @@ export default function CabalaDashboard() {
             { id: 'memes' as const, label: 'memes y polémicas' },
             { id: 'calle' as const, label: 'en las calles' },
             { id: 'road' as const, label: 'Camino al Mundial' },
+            { id: 'journey' as const, label: 'Viaje del hincha' },
           ].map(m => {
             const on = activeMods.has(m.id);
             return (
@@ -345,6 +347,16 @@ export default function CabalaDashboard() {
           </section>
         )}
 
+        {activeMods.has('journey') && (
+          <section className="mt-3">
+            <div className="mb-1.5 flex items-baseline justify-between">
+              <h2 className="text-xs font-medium tracking-wide text-stone-700">Viaje del hincha</h2>
+              <span className="text-[10px] text-stone-400">vlogs recientes desde youtube</span>
+            </div>
+            <FanJourney />
+          </section>
+        )}
+
         {activeMods.has('memes') && (
           <section className="mt-3">
             <div className="mb-1.5 flex items-baseline justify-between">
@@ -376,7 +388,7 @@ export default function CabalaDashboard() {
         )}
 
         <footer className="mt-12 border-t border-stone-200 pt-4 text-center text-[10px] text-stone-400">
-          Cábala v0.4 · datos reales + claude + chat + camino · construido por Diego con asistencia de Claude
+          Cábala v0.5 · datos reales + claude + chat + camino + viaje · construido por Diego con asistencia de Claude
         </footer>
       </div>
       <Chat context={{ memes, tribe: tribeArray, activeMods: Array.from(activeMods) }} />
