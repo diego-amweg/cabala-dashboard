@@ -1,5 +1,17 @@
 import { NextResponse } from 'next/server';
 
+interface BlueskyEmbedImages {
+  $type: 'app.bsky.embed.images#view';
+  images: Array<{ thumb: string; fullsize: string; alt?: string }>;
+}
+
+interface BlueskyEmbedExternal {
+  $type: 'app.bsky.embed.external#view';
+  external: { uri: string; title: string; description: string; thumb?: string };
+}
+
+type BlueskyEmbed = BlueskyEmbedImages | BlueskyEmbedExternal | { $type: string };
+
 interface BlueskyPost {
   uri: string;
   cid: string;
@@ -9,6 +21,7 @@ interface BlueskyPost {
   likeCount?: number;
   repostCount?: number;
   replyCount?: number;
+  embed?: BlueskyEmbed;
 }
 
 type Tag = 'meme' | 'polémica' | 'pelea' | 'viral' | 'noticia';
@@ -23,6 +36,7 @@ interface FeedItem {
   url: string;
   author: string;
   query: string;
+  imageUrl?: string;
 }
 
 let cachedJwt: { jwt: string; expiresAt: number } | null = null;
@@ -67,6 +81,19 @@ function postToUrl(post: BlueskyPost): string {
   return `https://bsky.app/profile/${post.author.handle}/post/${rkey}`;
 }
 
+function extractImage(embed?: BlueskyEmbed): string | undefined {
+  if (!embed) return undefined;
+  if (embed.$type === 'app.bsky.embed.images#view') {
+    const e = embed as BlueskyEmbedImages;
+    return e.images?.[0]?.thumb;
+  }
+  if (embed.$type === 'app.bsky.embed.external#view') {
+    const e = embed as BlueskyEmbedExternal;
+    return e.external?.thumb;
+  }
+  return undefined;
+}
+
 async function searchQuery(query: string, jwt: string): Promise<{ items: FeedItem[]; status: number; error?: string }> {
   const url = `https://bsky.social/xrpc/app.bsky.feed.searchPosts?q=${encodeURIComponent(query)}&limit=25&sort=top`;
   try {
@@ -84,6 +111,7 @@ async function searchQuery(query: string, jwt: string): Promise<{ items: FeedIte
         url: postToUrl(post),
         author: post.author.handle,
         query,
+        imageUrl: extractImage(post.embed),
       };
     });
     return { items, status: 200 };
