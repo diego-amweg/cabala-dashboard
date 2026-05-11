@@ -30,39 +30,58 @@ const STATUS_STYLES: Record<string, { bg: string; fg: string; label: string }> =
   'scheduled': { bg: '#f5f5f4', fg: '#78716c', label: 'programado' },
 };
 
+function groupByDate(fixtures: FixtureItem[]): { date: string; items: FixtureItem[] }[] {
+  const groups = new Map<string, FixtureItem[]>();
+  fixtures.forEach(f => {
+    if (!groups.has(f.date)) groups.set(f.date, []);
+    groups.get(f.date)!.push(f);
+  });
+  return Array.from(groups.entries()).map(([date, items]) => ({ date, items }));
+}
+
 export default function Calendar() {
+  const groups = groupByDate(FIXTURES);
+
   return (
     <div className="rounded-xl border border-stone-200 bg-white p-3">
-      <div className="space-y-0.5">
-        {FIXTURES.map(f => {
-          const st = STATUS_STYLES[f.status];
-          const scoreText = f.status !== 'scheduled' && f.homeScore !== undefined && f.awayScore !== undefined
-            ? `${f.homeScore}-${f.awayScore}`
-            : 'vs';
-          return (
-            <div key={f.id} className="flex items-center gap-3 rounded-md px-2.5 py-2 text-xs transition-colors hover:bg-stone-50">
-              <div className="w-20 shrink-0">
-                <div className="text-[10px] uppercase tracking-wider text-stone-400">{f.date}</div>
-                <div className="font-mono tabular-nums text-stone-700">{f.time}</div>
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="truncate font-medium text-stone-900">
-                  {f.home} <span className="mx-1 text-stone-400">{scoreText}</span> {f.away}
-                </div>
-                <div className="truncate text-[10px] text-stone-500">{f.phase} · {f.venue}</div>
-              </div>
-              <span
-                className="shrink-0 rounded px-1.5 py-px text-[9px] font-medium uppercase tracking-wider"
-                style={{ backgroundColor: st.bg, color: st.fg }}
-              >
-                {f.status === 'live' && <span className="mr-1 inline-block h-1 w-1 animate-pulse rounded-full" style={{ backgroundColor: st.fg }} />}
-                {st.label}
-              </span>
+      <div className="space-y-4">
+        {groups.map(group => (
+          <div key={group.date}>
+            <div className="mb-1.5 flex items-center gap-2 border-b border-stone-100 pb-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-stone-700">{group.date}</span>
+              <span className="text-[10px] text-stone-400">· {group.items.length} {group.items.length === 1 ? 'partido' : 'partidos'}</span>
             </div>
-          );
-        })}
+            <div className="space-y-0.5">
+              {group.items.map(f => {
+                const st = STATUS_STYLES[f.status];
+                const showScore = f.status !== 'scheduled' && f.homeScore !== undefined && f.awayScore !== undefined;
+                return (
+                  <div key={f.id} className="flex items-center gap-3 rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-stone-50">
+                    <div className="w-10 shrink-0 font-mono tabular-nums text-stone-600">{f.time}</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-stone-900">
+                        <span className="font-medium">{f.home}</span>
+                        {showScore ? (
+                          <span className="mx-1.5 font-mono tabular-nums text-stone-700">{f.homeScore}-{f.awayScore}</span>
+                        ) : (
+                          <span className="mx-1.5 text-stone-400">vs</span>
+                        )}
+                        <span className="font-medium">{f.away}</span>
+                      </div>
+                      <div className="truncate text-[10px] text-stone-500">{f.phase} · {f.venue}</div>
+                    </div>
+                    <span className="shrink-0 rounded px-1.5 py-px text-[9px] font-medium uppercase tracking-wider" style={{ backgroundColor: st.bg, color: st.fg }}>
+                      {f.status === 'live' && <span className="mr-1 inline-block h-1 w-1 animate-pulse rounded-full" style={{ backgroundColor: st.fg }} />}
+                      {st.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
-      <p className="mt-3 text-[9px] italic text-stone-400">fixture provisorio · Sprint 5 lo conecta a API-Football con resultados reales</p>
+      <p className="mt-3 text-[9px] italic text-stone-400">fixture provisorio · Sprint 5 lo conecta a API-Football con resultados reales al cierre de cada partido</p>
     </div>
   );
 }
