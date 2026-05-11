@@ -26,6 +26,7 @@ interface VideoItem {
   thumbnail: string;
   url: string;
   query: string;
+  tag?: string;
   keepReason?: string;
 }
 
@@ -89,43 +90,49 @@ async function searchYouTube(query: string, apiKey: string): Promise<{ items: Vi
 interface ClaudeClassification {
   i: number;
   keep: boolean;
+  tag?: string | null;
   reason: string;
 }
 
-async function classifyWithClaude(videos: VideoItem[], anthropicKey: string): Promise<{ classifications: Map<string, { keep: boolean; reason: string }>; error?: string }> {
+const VALID_TAGS = new Set(['vlog', 'tour', 'preparacion', 'experiencia']);
+
+async function classifyWithClaude(videos: VideoItem[], anthropicKey: string): Promise<{ classifications: Map<string, { keep: boolean; tag?: string; reason: string }>; error?: string }> {
   if (videos.length === 0) return { classifications: new Map() };
 
   const videoList = videos.map((v, i) => `${i}. "${v.title}" — canal: ${v.channel}`).join('\n');
 
-  const prompt = `Estás filtrando videos de YouTube para un módulo llamado "Viaje del hincha" en Cábala, plataforma personal para Diego (argentino) que vive el Mundial 2026 de fútbol FIFA desde su casa.
+  const prompt = `Estás filtrando y etiquetando videos de YouTube para el módulo "Viaje del hincha" en Cábala, plataforma de Diego (argentino) para vivir el Mundial 2026 FIFA desde su casa.
 
-OBJETIVO ESTRICTO: dejar pasar SOLO videos donde un hincha de fútbol está VIAJANDO al Mundial 2026 o documentando experiencias relacionadas con asistir presencialmente al torneo.
+OBJETIVO: dejar pasar videos que ayuden a Diego a vivir VICARIAMENTE el viaje al Mundial — sea de hinchas reales viajando, gente recorriendo las ciudades sede, o mostrando la experiencia de asistir.
 
-DEJAR PASAR (keep: true):
-- Vlog real de un hincha que ya viajó o está viajando a EEUU, Canadá o México por el Mundial
-- Recorrido (tour) de una ciudad sede del Mundial 2026 mostrando estadio, fan zones, ambiente
-- Experiencia de comprar entradas, prepararse para el viaje, mostrar la logística
-- Hincha hablando de su viaje futuro al Mundial 2026 con planes concretos
+DEJAR PASAR (keep: true) con su tag apropiado:
+- "vlog" → un hincha real documentando su viaje al Mundial 2026 en primera persona
+- "tour" → recorrido por una ciudad sede mostrando estadio, ambiente, lugares (aunque lo haga un youtuber de viajes, no un hincha)
+- "preparacion" → comprar entradas, planear el viaje, logística, hospedaje, transporte
+- "experiencia" → historias de hinchas (ganar viajes, despedidas, encuentros, anécdotas vinculadas al Mundial)
 
 RECHAZAR (keep: false):
-- Análisis táctico, opiniones sobre selecciones, debates sobre formaciones
-- Predicciones de campeón, "quién va a ganar"
-- Reacciones a partidos (de cualquier competencia)
-- Abrir sobres, cromos, álbumes Panini, stickers (en cualquier idioma o forma)
-- "Mundial 2026" de competencias que NO son fútbol FIFA (campeonatos de perros, robótica, etc.)
-- Festivales o eventos que no son fútbol
-- Dance challenges, shorts de hashtag spam sin contenido real
-- Análisis de jugadores específicos sin viaje real
-- Contenido en idiomas que no son español o portugués
+- Análisis táctico, predicciones, debates sobre selecciones, opiniones sobre jugadores
+- Prelistas, convocatorias, anuncios de plantel
+- Reacciones a partidos, eliminatorias, eliminaciones
+- Abrir sobres, cromos, álbumes Panini, figuritas, stickers
+- "Mundial 2026" de competencias que NO son fútbol FIFA (perros, robots, religioso, etc.)
+- Canciones, himnos, dance challenges, contenido de hashtag/shorts sin sustancia
+- Análisis económico, periodístico, arquitectónico sin viaje real involucrado
+- Mundial de Clubes (es otro torneo distinto)
+- Contenido en idiomas que no son español ni portugués
 
 Lista de videos a evaluar:
 ${videoList}
 
-Devolvé SOLO un array JSON (sin markdown, sin texto antes o después) con una entrada por cada video, en orden:
+Devolvé SOLO un array JSON (sin markdown, sin texto antes o después), una entrada por cada video, en orden:
 
-[{"i": 0, "keep": true, "reason": "vlog real de viaje a Filadelfia"}, {"i": 1, "keep": false, "reason": "predicción de campeón"}, ...]
+[{"i": 0, "keep": true, "tag": "tour", "reason": "tour por Filadelfia sede"}, {"i": 1, "keep": false, "tag": null, "reason": "predicción de campeón"}]
 
-El campo "reason" tiene que ser muy breve (máximo 8 palabras).`;
+Reglas estrictas:
+- El campo "tag" SOLO cuando "keep" es true. Si keep es false, tag = null
+- Los valores válidos de tag son: "vlog", "tour", "preparacion", "experiencia"
+- "reason" siempre breve, máximo 8 palabras`;
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -162,10 +169,11 @@ El campo "reason" tiene que ser muy breve (máximo 8 palabras).`;
       return { classifications: new Map(), error: 'json invalido en respuesta de claude' };
     }
 
-    const result = new Map<string, { keep: boolean; reason: string }>();
+    const result = new Map<string, { keep: boolean; tag?: string; reason: string }>();
     parsed.forEach(c => {
       if (typeof c.i === 'number' && c.i < videos.length) {
-        result.set(videos[c.i].id, { keep: !!c.keep, reason: c.reason || '' });
+        const tag = c.tag && VALID_TAGS.has(c.tag) ? c.tag : undefined;
+        result.set(videos[c.i].id, { keep: !!c.keep, tag, reason: c.reason || '' });
       }
     });
 
@@ -209,10 +217,11 @@ export async function GET(req: Request) {
   });
 
   let filtered: VideoItem[] = unique;
-  let classificationDebug: { used: boolean; error?: string; total: number; kept: number; rejected: Array<{ title: string; reason: string }> } = {
+  let classificationDebug: { used: boolean; error?: string; total: number; kept: number; tagBreakdown: Record<string, number>; rejected: Array<{ title: string; reason: string }> } = {
     used: false,
     total: unique.length,
     kept: unique.length,
+    tagBreakdown: {},
     rejected: [],
   };
 
@@ -223,16 +232,19 @@ export async function GET(req: Request) {
     } else {
       const kept: VideoItem[] = [];
       const rejected: Array<{ title: string; reason: string }> = [];
+      const tagBreakdown: Record<string, number> = {};
       for (const v of unique) {
         const c = classifications.get(v.id);
         if (c && c.keep) {
-          kept.push({ ...v, keepReason: c.reason });
+          kept.push({ ...v, tag: c.tag, keepReason: c.reason });
+          const t = c.tag || 'sin tag';
+          tagBreakdown[t] = (tagBreakdown[t] || 0) + 1;
         } else if (c) {
           rejected.push({ title: v.title, reason: c.reason });
         }
       }
       filtered = kept;
-      classificationDebug = { used: true, total: unique.length, kept: kept.length, rejected };
+      classificationDebug = { used: true, total: unique.length, kept: kept.length, tagBreakdown, rejected };
     }
   }
 
