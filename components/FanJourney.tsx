@@ -76,25 +76,23 @@ export default function FanJourney() {
 
   return (
     <div className="rounded-xl border border-stone-200 bg-white p-3">
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="-mx-3 flex gap-3 overflow-x-auto px-3 pb-2 snap-x">
         {videos.map(v => {
           const tc = v.tag ? TAG_COLORS[v.tag] : null;
           return (
-            <a key={v.id} href={v.url} target="_blank" rel="noopener noreferrer" className="flex gap-2 rounded-md p-2 transition-colors hover:bg-stone-50">
-              <div className="relative h-16 w-28 shrink-0 overflow-hidden rounded bg-stone-100">
+            <a key={v.id} href={v.url} target="_blank" rel="noopener noreferrer" className="w-60 shrink-0 snap-start overflow-hidden rounded-md border border-stone-100 transition-colors hover:bg-stone-50">
+              <div className="relative h-32 w-full overflow-hidden bg-stone-100">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={v.thumbnail} alt="" className="h-full w-full object-cover" loading="lazy" />
+                {tc && (
+                  <span className="absolute left-1.5 top-1.5 rounded px-1.5 py-px text-[9px] font-medium uppercase tracking-wider shadow-sm" style={{ backgroundColor: tc.bg, color: tc.fg }}>
+                    {tc.label}
+                  </span>
+                )}
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline gap-1.5">
-                  {tc && (
-                    <span className="shrink-0 rounded px-1.5 py-px text-[9px] font-medium uppercase tracking-wider" style={{ backgroundColor: tc.bg, color: tc.fg }}>
-                      {tc.label}
-                    </span>
-                  )}
-                  <p className="line-clamp-2 text-xs leading-snug text-stone-900">{v.title}</p>
-                </div>
-                <p className="mt-1 text-[10px] text-stone-500">{v.channel}</p>
+              <div className="p-2.5">
+                <p className="line-clamp-3 text-xs leading-snug text-stone-900">{v.title}</p>
+                <p className="mt-1.5 truncate text-[10px] text-stone-500">{v.channel}</p>
                 <p className="text-[10px] text-stone-400">{v.when} · YouTube</p>
               </div>
             </a>
