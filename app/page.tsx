@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import Chat from '@/components/Chat';
 import RoadToWorldCup from '@/components/RoadToWorldCup';
 import FanJourney from '@/components/FanJourney';
+import ImmersiveLayer from '@/components/ImmersiveLayer';
+
+const CURRENT_MATCH = 'octavos · México 1-1 Países Bajos · MetLife';
 
 const CITIES = [
   { id: 'van', name: 'Vancouver', x: 90, y: 30 },
@@ -87,7 +90,7 @@ function pickFresh<T>(pool: T[], current: T[], keyFn: (i: T) => string): T {
   return source[Math.floor(Math.random() * source.length)];
 }
 
-const ALL_MODULES = ['map', 'senti', 'suf', 'memes', 'calle', 'road', 'journey'] as const;
+const ALL_MODULES = ['map', 'senti', 'suf', 'memes', 'calle', 'road', 'journey', 'immersive'] as const;
 type ModuleId = typeof ALL_MODULES[number];
 
 export default function CabalaDashboard() {
@@ -230,7 +233,7 @@ export default function CabalaDashboard() {
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-orange-500" />
             live
           </span>
-          <span>octavos · México 1-1 Países Bajos · MetLife</span>
+          <span>{CURRENT_MATCH}</span>
           <span className="ml-auto font-mono text-xs tabular-nums text-stone-500">{fmtMin(liveSec)}</span>
         </div>
 
@@ -243,6 +246,7 @@ export default function CabalaDashboard() {
             { id: 'calle' as const, label: 'en las calles' },
             { id: 'road' as const, label: 'Camino al Mundial' },
             { id: 'journey' as const, label: 'Viaje del hincha' },
+            { id: 'immersive' as const, label: 'inmersivo' },
           ].map(m => {
             const on = activeMods.has(m.id);
             return (
@@ -357,6 +361,16 @@ export default function CabalaDashboard() {
           </section>
         )}
 
+        {activeMods.has('immersive') && (
+          <section className="mt-3">
+            <div className="mb-1.5 flex items-baseline justify-between">
+              <h2 className="text-xs font-medium tracking-wide text-stone-700">Inmersivo</h2>
+              <span className="text-[10px] text-stone-400">cómo vivir el partido · recomendado por claude</span>
+            </div>
+            <ImmersiveLayer match={CURRENT_MATCH} />
+          </section>
+        )}
+
         {activeMods.has('memes') && (
           <section className="mt-3">
             <div className="mb-1.5 flex items-baseline justify-between">
@@ -388,7 +402,7 @@ export default function CabalaDashboard() {
         )}
 
         <footer className="mt-12 border-t border-stone-200 pt-4 text-center text-[10px] text-stone-400">
-          Cábala v0.5 · datos reales + claude + chat + camino + viaje · construido por Diego con asistencia de Claude
+          Cábala v0.6 · sprint 4 completo · construido por Diego con asistencia de Claude
         </footer>
       </div>
       <Chat context={{ memes, tribe: tribeArray, activeMods: Array.from(activeMods) }} />
