@@ -72,3 +72,8 @@ Sos el lead engineer + arquitecto + product designer del proyecto Cábala. Diego
 - Nunca commits con API keys, tokens, contraseñas
 - Variables sensibles van en `.env.local` (gitignored) y en Vercel Environment Variables
 - Si Diego pega una key por error en el chat, avisarle que la rote inmediatamente
+
+## Buenas prácticas adoptadas durante el proyecto
+- **Filtrar contenido por LLM, no por keywords**: cualquier filtrado de contenido generado por terceros (videos, posts, noticias, comentarios) usa LLM como decisor principal desde la primera iteración. Las keywords pueden servir como pre-filtro barato si hay costo de API, pero la decisión final la toma el modelo. Aprendido en Sprint 4b: el blacklist falla siempre porque el contenido humano encuentra nuevas formas de expresar lo mismo (panini → sobres, predicción → "¿campeón otra vez?", etc.).
+- **Tagging antes que apretar el filtro**: cuando el contenido real disponible es más amplio que el alcance estricto del módulo, preferir tagging visible al usuario antes que apretar el filtro o renombrar el módulo. Es lo que hicimos para Viaje del hincha cuando el contenido real era 80% tours de ciudades sede y 20% hinchas reales.
+- **Cache + refresh manual**: todos los endpoints que consultan APIs externas tienen TTL razonable (30 min - 24 hs) y soportan `?refresh=true` para forzar regeneración. Sirve para debug y para iterar sin esperar el TTL.
