@@ -68,30 +68,21 @@ export default function FanJourney() {
   return (
     <div className="rounded-xl border border-stone-200 bg-white p-3">
       <div className="grid gap-2 sm:grid-cols-2">
-        {videos.map(v => (
-          
-            key={v.id}
-            href={v.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex gap-2 rounded-md p-2 transition-colors hover:bg-stone-50"
-          >
-            <div className="relative h-16 w-28 shrink-0 overflow-hidden rounded bg-stone-100">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={v.thumbnail}
-                alt=""
-                className="h-full w-full object-cover"
-                loading="lazy"
-              />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="line-clamp-2 text-xs leading-snug text-stone-900">{v.title}</p>
-              <p className="mt-1 text-[10px] text-stone-500">{v.channel}</p>
-              <p className="text-[10px] text-stone-400">{v.when} · YouTube</p>
-            </div>
-          </a>
-        ))}
+        {videos.map(v => {
+          return (
+            <a key={v.id} href={v.url} target="_blank" rel="noopener noreferrer" className="flex gap-2 rounded-md p-2 transition-colors hover:bg-stone-50">
+              <div className="relative h-16 w-28 shrink-0 overflow-hidden rounded bg-stone-100">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={v.thumbnail} alt="" className="h-full w-full object-cover" loading="lazy" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="line-clamp-2 text-xs leading-snug text-stone-900">{v.title}</p>
+                <p className="mt-1 text-[10px] text-stone-500">{v.channel}</p>
+                <p className="text-[10px] text-stone-400">{v.when} · YouTube</p>
+              </div>
+            </a>
+          );
+        })}
       </div>
     </div>
   );
