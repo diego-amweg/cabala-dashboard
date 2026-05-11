@@ -6,8 +6,8 @@ Plataforma personal para vivir el Mundial 2026 como fenómeno cultural total, no
 
 ## Estado del proyecto
 
-- **Versión actual**: v0.3 — chat conversacional integrado
-- **Sprint completado**: 3b
+- **Versión actual**: v0.5 — chat conversacional integrado
+- **Sprint completado**: 4b
 - **Próximo sprint**: 4 — módulos faltantes (Camino al Mundial, Viaje del hincha, AR/VR)
 - **Última actualización**: mayo 2026
 - **Días al kickoff**: ~31 (11 de junio de 2026)
@@ -96,7 +96,7 @@ cabala-dashboard/
 | 4 | Memes y polémicas | vivo | reales (Bluesky + Claude) |
 | 5 | En las calles | vivo | simulados |
 | 6 | Camino al Mundial | pendiente | — |
-| 7 | Viaje del hincha | pendiente | — |
+| 7 | Viaje del hincha | vivo | reales (YouTube + Claude tagea) |
 | 8 | Capa AR/VR | pendiente | — |
 | 9 | Asistente Claude | vivo | — |
 | 10 | Briefings automáticos | pendiente | — |
@@ -145,7 +145,8 @@ Estados: `pendiente` → `diseñado` → `vivo (mock)` → `vivo (real)`
 10. **Path API misleading** (deuda técnica): el endpoint sigue en `/api/reddit/route.ts` aunque consume Bluesky. Se renombra a `/api/feed` en Sprint 7.
 11. **Componente Chat extraído** (Sprint 3b): extraído a `components/Chat.tsx` para evitar que `page.tsx` siga creciendo. Es el primer componente del proyecto fuera de `app/`.
 12. **Sin streaming en el chat** (Sprint 3b): respuestas no streameadas para simplicidad inicial. Streaming queda para sprint de polish si se nota como problema de UX.
-13. Clasificación de contenido por LLM (Sprint 4b, segunda iteración): el módulo Viaje del hincha intentó filtrar videos con keywords blacklist y falló (panini cambiaba de palabra, otros mundiales tomaban prestada la frase, predicciones se disfrazaban). Pivoteamos a clasificación con Haiku batch, mismo patrón que ya usábamos para memes. Costo: ~$0.01 por refresh, trivial. Regla general adoptada: filtrar contenido humano por LLM, no por keywords.
+13. **Clasificación de contenido por LLM** (Sprint 4b, segunda iteración): el módulo Viaje del hincha intentó filtrar videos con keywords blacklist y falló. Panini cambiaba de palabra a "sobres", existen otros Mundiales en 2026 como el FMBB de pastores belgas, las predicciones se disfrazaban de preguntas. Pivoteamos a clasificación con Haiku batch, mismo patrón que usábamos para memes. Costo: ~$0.01 por refresh, trivial. Regla general adoptada: cualquier filtro de contenido generado por terceros usa LLM como decisor principal desde la primera iteración.
+14. **Tagging como compromiso semántico** (Sprint 4b, tercera iteración): el contenido real disponible para "Viaje del hincha" hoy es mayormente tours de ciudades sede hechos por youtubers de viajes, no vlogs de hinchas reales (esos van a explotar durante el torneo, no antes). En vez de apretar el filtro y dejar el módulo raquítico o renombrarlo, mantenemos el nombre "Viaje del hincha" y agregamos cuatro tags generados por Claude: vlog, tour, preparación, experiencia. Mismo patrón visual y de coloreo que el módulo de memes.
 
 ## Cronograma realizado
 
@@ -154,7 +155,7 @@ Estados: `pendiente` → `diseñado` → `vivo (mock)` → `vivo (real)`
 - **Sprint 2** (mayo 2026): intento de integración con Reddit falla por cambio de política → pivot a Bluesky con App Password auth → módulo de memes muestra datos reales del torneo.
 - **Sprint 3a** (mayo 2026): Claude API integrada para clasificación (cinco categorías), traducción al español rioplatense, scoring de relevancia, cache de enhancements para reducir costos.
 - **Sprint 3b** (mayo 2026): asistente conversacional flotante con contexto del dashboard. Sonnet 4.6, manejo de errores, UI con tipping indicator, sugerencias en estado vacío.
-- **Sprint 4b** (mayo 2026): integración con YouTube API, primer intento con blacklist keywords falla, pivot a clasificación con Claude Haiku.
+- **Sprint 4b** (mayo 2026): integración con YouTube API. Tres iteraciones de filtrado: keywords brutas → keywords refinadas → clasificación con Haiku con tags. Módulo Viaje del hincha vivo con datos reales tageados (vlog / tour / preparación / experiencia).
 
 ## Próximos sprints (orden definido por Diego)
 
