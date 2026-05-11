@@ -26,6 +26,7 @@ interface VideoItem {
   thumbnail: string;
   url: string;
   query: string;
+  keepReason?: string;
 }
 
 const cache = new Map<string, { data: VideoItem[]; cachedAt: number }>();
@@ -34,40 +35,9 @@ const CACHE_TTL = 30 * 60 * 1000;
 const QUERIES = [
   'rumbo al mundial 2026 vlog',
   'viaje al mundial 2026 hincha',
-  'entradas mundial 2026 experiencia',
-  'argentinos viajando mundial 2026',
+  'visite ciudad mundial 2026',
+  'argentinos en mundial 2026',
 ];
-
-const BLACKLIST_WORDS = [
-  'panini',
-  'cromos',
-  'álbum',
-  'album',
-  'sticker',
-  'predicción',
-  'prediccion',
-  'predict',
-  'dự đoán',
-  'reto ',
-  'reto:',
-  'reto-',
-  'reacción',
-  'reacciones',
-  'reaccion',
-  'apertura 2026',
-  'clausura 2026',
-  'liga profesional',
-  'futbol 2026 #',
-  'football 2026 #',
-];
-
-function isJourneyContent(item: VideoItem): boolean {
-  const text = (item.title + ' ' + item.channel).toLowerCase();
-  for (const word of BLACKLIST_WORDS) {
-    if (text.includes(word.toLowerCase())) return false;
-  }
-  return true;
-}
 
 function timeAgo(iso: string): string {
   const sec = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -116,6 +86,95 @@ async function searchYouTube(query: string, apiKey: string): Promise<{ items: Vi
   }
 }
 
+interface ClaudeClassification {
+  i: number;
+  keep: boolean;
+  reason: string;
+}
+
+async function classifyWithClaude(videos: VideoItem[], anthropicKey: string): Promise<{ classifications: Map<string, { keep: boolean; reason: string }>; error?: string }> {
+  if (videos.length === 0) return { classifications: new Map() };
+
+  const videoList = videos.map((v, i) => `${i}. "${v.title}" — canal: ${v.channel}`).join('\n');
+
+  const prompt = `Estás filtrando videos de YouTube para un módulo llamado "Viaje del hincha" en Cábala, plataforma personal para Diego (argentino) que vive el Mundial 2026 de fútbol FIFA desde su casa.
+
+OBJETIVO ESTRICTO: dejar pasar SOLO videos donde un hincha de fútbol está VIAJANDO al Mundial 2026 o documentando experiencias relacionadas con asistir presencialmente al torneo.
+
+DEJAR PASAR (keep: true):
+- Vlog real de un hincha que ya viajó o está viajando a EEUU, Canadá o México por el Mundial
+- Recorrido (tour) de una ciudad sede del Mundial 2026 mostrando estadio, fan zones, ambiente
+- Experiencia de comprar entradas, prepararse para el viaje, mostrar la logística
+- Hincha hablando de su viaje futuro al Mundial 2026 con planes concretos
+
+RECHAZAR (keep: false):
+- Análisis táctico, opiniones sobre selecciones, debates sobre formaciones
+- Predicciones de campeón, "quién va a ganar"
+- Reacciones a partidos (de cualquier competencia)
+- Abrir sobres, cromos, álbumes Panini, stickers (en cualquier idioma o forma)
+- "Mundial 2026" de competencias que NO son fútbol FIFA (campeonatos de perros, robótica, etc.)
+- Festivales o eventos que no son fútbol
+- Dance challenges, shorts de hashtag spam sin contenido real
+- Análisis de jugadores específicos sin viaje real
+- Contenido en idiomas que no son español o portugués
+
+Lista de videos a evaluar:
+${videoList}
+
+Devolvé SOLO un array JSON (sin markdown, sin texto antes o después) con una entrada por cada video, en orden:
+
+[{"i": 0, "keep": true, "reason": "vlog real de viaje a Filadelfia"}, {"i": 1, "keep": false, "reason": "predicción de campeón"}, ...]
+
+El campo "reason" tiene que ser muy breve (máximo 8 palabras).`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': anthropicKey,
+        'content-type': 'application/json',
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 4000,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      return { classifications: new Map(), error: `claude HTTP ${res.status}: ${text.slice(0, 200)}` };
+    }
+
+    const data = await res.json();
+    const responseText: string = data.content[0].text.trim();
+
+    const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      return { classifications: new Map(), error: 'no se pudo extraer array json' };
+    }
+
+    let parsed: ClaudeClassification[];
+    try {
+      parsed = JSON.parse(jsonMatch[0]);
+    } catch {
+      return { classifications: new Map(), error: 'json invalido en respuesta de claude' };
+    }
+
+    const result = new Map<string, { keep: boolean; reason: string }>();
+    parsed.forEach(c => {
+      if (typeof c.i === 'number' && c.i < videos.length) {
+        result.set(videos[c.i].id, { keep: !!c.keep, reason: c.reason || '' });
+      }
+    });
+
+    return { classifications: result };
+  } catch (e) {
+    return { classifications: new Map(), error: e instanceof Error ? e.message : 'unknown' };
+  }
+}
+
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const forceRefresh = url.searchParams.get('refresh') === 'true';
@@ -131,20 +190,15 @@ export async function GET(req: Request) {
     return NextResponse.json({ items: [], error: 'env var YOUTUBE_API_KEY faltante en vercel' });
   }
 
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+
   const all: VideoItem[] = [];
-  const debug: Array<{ query: string; status: number; raw: number; afterFilter: number; error?: string }> = [];
+  const searchDebug: Array<{ query: string; status: number; raw: number; error?: string }> = [];
 
   for (const q of QUERIES) {
     const result = await searchYouTube(q, apiKey);
-    const filtered = result.items.filter(isJourneyContent);
-    debug.push({
-      query: q,
-      status: result.status,
-      raw: result.items.length,
-      afterFilter: filtered.length,
-      error: result.error,
-    });
-    all.push(...filtered);
+    searchDebug.push({ query: q, status: result.status, raw: result.items.length, error: result.error });
+    all.push(...result.items);
   }
 
   const seen = new Set<string>();
@@ -154,10 +208,42 @@ export async function GET(req: Request) {
     return true;
   });
 
-  unique.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+  let filtered: VideoItem[] = unique;
+  let classificationDebug: { used: boolean; error?: string; total: number; kept: number; rejected: Array<{ title: string; reason: string }> } = {
+    used: false,
+    total: unique.length,
+    kept: unique.length,
+    rejected: [],
+  };
 
-  const top = unique.slice(0, 12);
+  if (anthropicKey && unique.length > 0) {
+    const { classifications, error } = await classifyWithClaude(unique, anthropicKey);
+    if (error || classifications.size === 0) {
+      classificationDebug = { ...classificationDebug, used: false, error: error || 'sin clasificaciones' };
+    } else {
+      const kept: VideoItem[] = [];
+      const rejected: Array<{ title: string; reason: string }> = [];
+      for (const v of unique) {
+        const c = classifications.get(v.id);
+        if (c && c.keep) {
+          kept.push({ ...v, keepReason: c.reason });
+        } else if (c) {
+          rejected.push({ title: v.title, reason: c.reason });
+        }
+      }
+      filtered = kept;
+      classificationDebug = { used: true, total: unique.length, kept: kept.length, rejected };
+    }
+  }
+
+  filtered.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+  const top = filtered.slice(0, 12);
   cache.set(cacheKey, { data: top, cachedAt: Date.now() });
 
-  return NextResponse.json({ items: top, updatedAt: Date.now(), cached: false, debug });
+  return NextResponse.json({
+    items: top,
+    updatedAt: Date.now(),
+    cached: false,
+    debug: { search: searchDebug, classification: classificationDebug },
+  });
 }
