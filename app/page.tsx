@@ -5,6 +5,7 @@ import Chat from '@/components/Chat';
 import RoadToWorldCup from '@/components/RoadToWorldCup';
 import FanJourney from '@/components/FanJourney';
 import ImmersiveLayer from '@/components/ImmersiveLayer';
+import Calendar from '@/components/Calendar';
 
 const CURRENT_MATCH = 'octavos · México 1-1 Países Bajos · MetLife';
 
@@ -90,7 +91,7 @@ function pickFresh<T>(pool: T[], current: T[], keyFn: (i: T) => string): T {
   return source[Math.floor(Math.random() * source.length)];
 }
 
-const ALL_MODULES = ['map', 'senti', 'suf', 'memes', 'calle', 'road', 'journey', 'immersive'] as const;
+const ALL_MODULES = ['map', 'senti', 'suf', 'memes', 'calle', 'journey', 'calendar', 'road', 'immersive'] as const;
 type ModuleId = typeof ALL_MODULES[number];
 
 export default function CabalaDashboard() {
@@ -184,7 +185,7 @@ export default function CabalaDashboard() {
   if (memesLoading) {
     memesContent = <p className="text-xs text-stone-400">trayendo y procesando posts...</p>;
   } else if (memesError) {
-    memesContent = <p className="text-xs text-stone-400">no se pudo conectar con bluesky. los posts vuelven cuando vuelva la conexion.</p>;
+    memesContent = <p className="text-xs text-stone-400">no se pudo conectar con bluesky.</p>;
   } else if (memes.length === 0) {
     memesContent = <p className="text-xs text-stone-400">sin posts por ahora.</p>;
   } else {
@@ -207,23 +208,26 @@ export default function CabalaDashboard() {
   else memesMeta = 'desde bluesky · clasificado por claude';
 
   const tribeArray = Array.from(tribe);
+  const heartDuration = (180 - pulse) / 60;
 
   return (
     <main className="min-h-screen bg-stone-50 text-stone-900 selection:bg-orange-200">
+      <style dangerouslySetInnerHTML={{__html: `@keyframes cabala-heartbeat { 0%, 100% { transform: scale(1); } 25% { transform: scale(1.25); } 50% { transform: scale(0.95); } 75% { transform: scale(1.18); } }`}} />
+
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
-        <header className="flex flex-col gap-2 border-b border-stone-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
+        <header className="flex flex-col gap-3 border-b border-stone-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-2xl font-medium leading-tight tracking-tight sm:text-3xl">Cábala</h1>
             <p className="mt-1 text-sm text-stone-500">la superstición se hizo software</p>
           </div>
-          <div className="flex flex-col items-start gap-1 sm:items-end">
+          <div className="flex flex-col items-start gap-2 sm:items-end">
             <div className="font-mono text-xs text-stone-500">día 12 · jue 25 jun · 18:42 ART</div>
-            <div className="flex items-center gap-2 text-xs text-stone-400">
-              <span>pulso global</span>
-              <div className="h-1 w-20 overflow-hidden rounded bg-stone-200">
-                <div className="h-full bg-orange-500 transition-[width] duration-1000" style={{ width: `${Math.round(pulse)}%` }} />
-              </div>
-              <span className="w-5 text-right font-mono tabular-nums">{Math.round(pulse)}</span>
+            <div className="flex items-center gap-2.5 rounded-md bg-stone-100 px-3 py-1.5">
+              <span className="text-[10px] uppercase tracking-wider text-stone-500">pulso global</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#f97316" style={{ animation: `cabala-heartbeat ${heartDuration}s ease-in-out infinite`, transformOrigin: 'center' }}>
+                <path d="M12 21s-7-4.35-7-10a4 4 0 0 1 7-2.65A4 4 0 0 1 19 11c0 5.65-7 10-7 10z" />
+              </svg>
+              <span className="font-mono text-sm font-medium tabular-nums text-stone-900">{Math.round(pulse)}</span>
             </div>
           </div>
         </header>
@@ -244,8 +248,9 @@ export default function CabalaDashboard() {
             { id: 'suf' as const, label: 'sufrimiento' },
             { id: 'memes' as const, label: 'memes y polémicas' },
             { id: 'calle' as const, label: 'en las calles' },
-            { id: 'road' as const, label: 'Camino al Mundial' },
             { id: 'journey' as const, label: 'Viaje del hincha' },
+            { id: 'calendar' as const, label: 'Calendario' },
+            { id: 'road' as const, label: 'Camino al Mundial' },
             { id: 'immersive' as const, label: 'inmersivo' },
           ].map(m => {
             const on = activeMods.has(m.id);
@@ -341,36 +346,6 @@ export default function CabalaDashboard() {
           )}
         </div>
 
-        {activeMods.has('road') && (
-          <section className="mt-3">
-            <div className="mb-1.5 flex items-baseline justify-between">
-              <h2 className="text-xs font-medium tracking-wide text-stone-700">Camino al Mundial</h2>
-              <span className="text-[10px] text-stone-400">narrativa por selección · generada por claude</span>
-            </div>
-            <RoadToWorldCup tribe={tribeArray} />
-          </section>
-        )}
-
-        {activeMods.has('journey') && (
-          <section className="mt-3">
-            <div className="mb-1.5 flex items-baseline justify-between">
-              <h2 className="text-xs font-medium tracking-wide text-stone-700">Viaje del hincha</h2>
-              <span className="text-[10px] text-stone-400">vlogs recientes desde youtube</span>
-            </div>
-            <FanJourney />
-          </section>
-        )}
-
-        {activeMods.has('immersive') && (
-          <section className="mt-3">
-            <div className="mb-1.5 flex items-baseline justify-between">
-              <h2 className="text-xs font-medium tracking-wide text-stone-700">Inmersivo</h2>
-              <span className="text-[10px] text-stone-400">cómo vivir el partido · recomendado por claude</span>
-            </div>
-            <ImmersiveLayer match={CURRENT_MATCH} />
-          </section>
-        )}
-
         {activeMods.has('memes') && (
           <section className="mt-3">
             <div className="mb-1.5 flex items-baseline justify-between">
@@ -401,8 +376,48 @@ export default function CabalaDashboard() {
           </section>
         )}
 
+        {activeMods.has('journey') && (
+          <section className="mt-3">
+            <div className="mb-1.5 flex items-baseline justify-between">
+              <h2 className="text-xs font-medium tracking-wide text-stone-700">Viaje del hincha</h2>
+              <span className="text-[10px] text-stone-400">vlogs recientes · desplazá ← →</span>
+            </div>
+            <FanJourney />
+          </section>
+        )}
+
+        {activeMods.has('calendar') && (
+          <section className="mt-3">
+            <div className="mb-1.5 flex items-baseline justify-between">
+              <h2 className="text-xs font-medium tracking-wide text-stone-700">Calendario del Mundial</h2>
+              <span className="text-[10px] text-stone-400">próximos partidos</span>
+            </div>
+            <Calendar />
+          </section>
+        )}
+
+        {activeMods.has('road') && (
+          <section className="mt-3">
+            <div className="mb-1.5 flex items-baseline justify-between">
+              <h2 className="text-xs font-medium tracking-wide text-stone-700">Camino al Mundial</h2>
+              <span className="text-[10px] text-stone-400">narrativa por selección · generada por claude</span>
+            </div>
+            <RoadToWorldCup tribe={tribeArray} />
+          </section>
+        )}
+
+        {activeMods.has('immersive') && (
+          <section className="mt-3">
+            <div className="mb-1.5 flex items-baseline justify-between">
+              <h2 className="text-xs font-medium tracking-wide text-stone-700">Inmersivo</h2>
+              <span className="text-[10px] text-stone-400">cómo vivir el partido · recomendado por claude</span>
+            </div>
+            <ImmersiveLayer match={CURRENT_MATCH} />
+          </section>
+        )}
+
         <footer className="mt-12 border-t border-stone-200 pt-4 text-center text-[10px] text-stone-400">
-          Cábala v0.6 · sprint 4 completo · construido por Diego con asistencia de Claude
+          Cábala v0.7 · sprint 4d-1 · construido por Diego con asistencia de Claude
         </footer>
       </div>
       <Chat context={{ memes, tribe: tribeArray, activeMods: Array.from(activeMods) }} />
