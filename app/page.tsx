@@ -250,14 +250,14 @@ export default function CabalaDashboard() {
 
         <div className="mt-6 flex flex-wrap gap-1.5">
           {[
-            { id: 'map' as const, label: 'Ojo de Dios' },
+            { id: 'map' as const, label: 'ojo de dios' },
             { id: 'senti' as const, label: 'sentimiento' },
             { id: 'suf' as const, label: 'sufrimiento' },
             { id: 'memes' as const, label: 'memes y polémicas' },
             { id: 'calle' as const, label: 'en las calles' },
-            { id: 'journey' as const, label: 'Viaje del hincha' },
-            { id: 'calendar' as const, label: 'Calendario' },
-            { id: 'road' as const, label: 'Camino al Mundial' },
+            { id: 'journey' as const, label: 'viaje del hincha' },
+            { id: 'calendar' as const, label: 'calendario' },
+            { id: 'road' as const, label: 'camino al mundial' },
             { id: 'immersive' as const, label: 'inmersivo' },
           ].map(m => {
             const on = activeMods.has(m.id);
@@ -289,7 +289,7 @@ export default function CabalaDashboard() {
         {activeMods.has('map') && (
           <section className="mt-6">
             <div className="mb-1.5 flex items-baseline justify-between">
-              <h2 className="text-xs font-medium tracking-wide text-stone-700">ojo de Dios · 16 ciudades sede</h2>
+              <h2 className="text-xs font-medium tracking-wide text-stone-700">ojo de dios · 16 ciudades sede</h2>
               <span className="text-[10px] text-stone-400">tamaño = intensidad ahora</span>
             </div>
             <div className="rounded-xl border border-stone-200 bg-white p-4">
@@ -386,7 +386,7 @@ export default function CabalaDashboard() {
         {activeMods.has('journey') && (
           <section className="mt-3">
             <div className="mb-1.5 flex items-baseline justify-between">
-              <h2 className="text-xs font-medium tracking-wide text-stone-700">Viaje del hincha</h2>
+              <h2 className="text-xs font-medium tracking-wide text-stone-700">viaje del hincha</h2>
               <span className="text-[10px] text-stone-400">vlogs recientes · desplazá ← →</span>
             </div>
             <FanJourney />
@@ -396,7 +396,7 @@ export default function CabalaDashboard() {
         {activeMods.has('calendar') && (
           <section className="mt-3">
             <div className="mb-1.5 flex items-baseline justify-between">
-              <h2 className="text-xs font-medium tracking-wide text-stone-700">Calendario del Mundial</h2>
+              <h2 className="text-xs font-medium tracking-wide text-stone-700">calendario del mundial</h2>
               <span className="text-[10px] text-stone-400">agrupado por día</span>
             </div>
             <Calendar />
@@ -406,7 +406,7 @@ export default function CabalaDashboard() {
         {activeMods.has('road') && (
           <section className="mt-3">
             <div className="mb-1.5 flex items-baseline justify-between">
-              <h2 className="text-xs font-medium tracking-wide text-stone-700">Camino al Mundial</h2>
+              <h2 className="text-xs font-medium tracking-wide text-stone-700">camino al mundial</h2>
               <span className="text-[10px] text-stone-400">narrativa por selección · generada por claude</span>
             </div>
             <RoadToWorldCup tribe={tribeArray} />
@@ -416,7 +416,7 @@ export default function CabalaDashboard() {
         {activeMods.has('immersive') && (
           <section className="mt-3">
             <div className="mb-1.5 flex items-baseline justify-between">
-              <h2 className="text-xs font-medium tracking-wide text-stone-700">Inmersivo</h2>
+              <h2 className="text-xs font-medium tracking-wide text-stone-700">inmersivo</h2>
               <span className="text-[10px] text-stone-400">cómo vivir el partido · recomendado por claude</span>
             </div>
             <ImmersiveLayer match={CURRENT_MATCH} />
@@ -424,7 +424,7 @@ export default function CabalaDashboard() {
         )}
 
         <footer className="mt-12 border-t border-stone-200 pt-4 text-center text-[10px] text-stone-400">
-          Cábala v0.8 · sprint 4d-1.5 · construido por Diego con asistencia de Claude
+          Cábala v0.9 · sprint 4d-1.6 · construido por Diego con asistencia de Claude
         </footer>
       </div>
       <Chat context={{ memes, tribe: tribeArray, activeMods: Array.from(activeMods) }} />
