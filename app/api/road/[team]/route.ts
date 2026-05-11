@@ -30,16 +30,31 @@ const TEAM_NAMES: Record<string, string> = {
   ENG: 'Inglaterra',
 };
 
+const TEAM_FACTS: Record<string, string> = {
+  ARG: `Argentina: TRICAMPEONA del Mundial (1978, 1986, 2022) — son TRES títulos, no dos. 16 Copas América (récord absoluto), bicampeona consecutiva en 2021 y 2024. DT actual: Lionel Scaloni. Capitán: Lionel Messi (con interrogantes físicos por edad). Vigente campeona del mundo y de Copa América. Clasificada para el Mundial 2026, selló matemáticamente la clasificación en marzo 2025 con triunfo 1-0 a Uruguay. La Copa América 2024 se jugó en EEUU entre junio y julio, final el 14 de julio.`,
+  BRA: `Brasil: PENTACAMPEÓN del Mundial (1958, 1962, 1970, 1994, 2002), récord absoluto. 9 Copas América. Última copa del mundo: 2002. En el Mundial 2022 fue eliminado en cuartos por Croacia. Federación atravesó cambios de DT recientes. La clasificación para 2026 vino con turbulencias.`,
+  FRA: `Francia: BICAMPEONA del Mundial (1998, 2018). Finalista en 2022 (perdió contra Argentina por penales). DT: Didier Deschamps (anunció que se va después del Mundial 2026). Capitán: Kylian Mbappé. Eliminatorias UEFA todavía en proceso.`,
+  ESP: `España: CAMPEONA del Mundial UNA sola vez (2010). Campeona de la Eurocopa 2024. DT: Luis de la Fuente. Vive un excelente momento generacional con Yamal, Pedri, Rodri.`,
+  ENG: `Inglaterra: CAMPEONA del Mundial UNA sola vez (1966, único título). Finalista de la Eurocopa 2024 (perdió contra España). DT recientemente cambió a Thomas Tuchel.`,
+  MEX: `México: NUNCA ganó un Mundial. Mejor resultado: cuartos de final (1970, 1986). Es anfitrión del Mundial 2026 junto con EEUU y Canadá, por lo que clasifica directamente (sin eliminatorias). Tradición frustrada de eliminación en octavos.`,
+  MAR: `Marruecos: NUNCA ganó un Mundial. Primera selección africana en llegar a semifinales (Mundial 2022, terminó 4to). Hito histórico para África y el mundo árabe. Generación de Hakimi, Ziyech, Bono.`,
+  JPN: `Japón: NUNCA ganó un Mundial. Llega habitualmente a octavos. En el Mundial 2022 venció a Alemania y España en fase de grupos pero fue eliminado en octavos por Croacia por penales. Selección con identidad ofensiva.`,
+};
+
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ team: string }> }
 ) {
   const { team } = await params;
   const teamCode = team.toUpperCase();
   const teamName = TEAM_NAMES[teamCode] || teamCode;
+  const teamFacts = TEAM_FACTS[teamCode] || 'No hay ficha específica. Usá conocimiento general con extra prudencia sobre números y fechas.';
+
+  const url = new URL(req.url);
+  const forceRefresh = url.searchParams.get('refresh') === 'true';
 
   const cached = cache.get(teamCode);
-  if (cached && Date.now() - cached.cachedAt < CACHE_TTL) {
+  if (!forceRefresh && cached && Date.now() - cached.cachedAt < CACHE_TTL) {
     return NextResponse.json({ ...cached.data, cached: true });
   }
 
@@ -51,6 +66,9 @@ export async function GET(
   const prompt = `Generá el "camino al Mundial 2026" para la selección de ${teamName} (código ${teamCode}).
 
 Es para una plataforma personal en español rioplatense de Diego, argentino de Tostado. El tono es informado pero accesible, casi como un amigo contándole.
+
+DATOS CLAVE QUE NO PODÉS CONTRADECIR EN NINGUNA PARTE DE TU RESPUESTA:
+${teamFacts}
 
 Devolvé SOLO un JSON válido (sin markdown, sin texto antes o después) con esta estructura exacta:
 
@@ -70,13 +88,13 @@ Devolvé SOLO un JSON válido (sin markdown, sin texto antes o después) con est
   "outlook": "1-2 oraciones sobre como llega ${teamName} al Mundial"
 }
 
-Reglas:
+Reglas estrictas:
 - 5-7 momentos en total, ordenados cronologicamente
 - Mezclá tags, no todos "decisivo"
-- Si no clasificó, status "eliminado" y outlook sobre el fracaso
-- Usá tu conocimiento real sobre las eliminatorias rumbo al Mundial 2026
-- Si tenés dudas sobre un hecho específico, mejor general que inventar
-- Lenguaje rioplatense pero sin slang excesivo
+- Respetá los DATOS CLAVE arriba: ese contador de títulos y esas fechas son no-negociables
+- Si no estás 100% seguro de una fecha o resultado específico, mantenelo vago (ej. "fines de 2024" en vez de "octubre 2024")
+- En el outlook, si la selección ya ganó el Mundial antes, usá los números correctos
+- Si la selección no clasificó, status "eliminado"
 - Los tags en JSON usan "preocupacion" sin tilde por compatibilidad`;
 
   try {
