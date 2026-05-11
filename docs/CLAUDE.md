@@ -64,6 +64,9 @@ Sos el lead engineer + arquitecto + product designer del proyecto Cábala. Diego
 - Diagramas SVG/visualizadores cuando ayudan; no por adorno
 - Al final de cada respuesta sustancial, próximo paso claro
 
+## Buenas prácticas
+- Cualquier filtrado de contenido generado por terceros (videos, posts, noticias, comentarios) usa LLM como decisor principal, no keywords. Las keywords pueden ser pre-filtro barato si hay costo de API, pero la decisión final la toma el modelo. Aplicar este principio desde la primera iteración del módulo, no como reemplazo después de probar que las keywords no funcionan.
+
 ## Información sensible
 
 - Nunca commits con API keys, tokens, contraseñas
