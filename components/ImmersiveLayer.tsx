@@ -85,12 +85,7 @@ export default function ImmersiveLayer({ match }: ImmersiveLayerProps) {
             <>
               <div className="mb-1 flex items-center justify-between gap-2">
                 <span className="text-xs font-medium text-stone-900">{opt.service}</span>
-                <span
-                  className="shrink-0 rounded px-1.5 py-px text-[9px] font-medium uppercase tracking-wider"
-                  style={{ backgroundColor: cc.bg, color: cc.fg }}
-                >
-                  {cc.label}
-                </span>
+                <span className="shrink-0 rounded px-1.5 py-px text-[9px] font-medium uppercase tracking-wider" style={{ backgroundColor: cc.bg, color: cc.fg }}>{cc.label}</span>
               </div>
               <p className="mb-1.5 text-[11px] leading-relaxed text-stone-600">{opt.description}</p>
               <div className="flex items-center justify-between gap-2 text-[10px] text-stone-500">
@@ -102,23 +97,14 @@ export default function ImmersiveLayer({ match }: ImmersiveLayerProps) {
 
           if (opt.url) {
             return (
-              
-                key={opt.id}
-                href={opt.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block rounded-md border border-stone-100 p-3 transition-colors hover:bg-stone-50"
-              >
+              <a key={opt.id} href={opt.url} target="_blank" rel="noopener noreferrer" className="block rounded-md border border-stone-100 p-3 transition-colors hover:bg-stone-50">
                 {cardContent}
               </a>
             );
           }
 
           return (
-            <div
-              key={opt.id}
-              className="block rounded-md border border-stone-100 p-3"
-            >
+            <div key={opt.id} className="block rounded-md border border-stone-100 p-3">
               {cardContent}
             </div>
           );
