@@ -6,9 +6,9 @@ Plataforma personal para vivir el Mundial 2026 como fenómeno cultural total, no
 
 ## Estado del proyecto
 
-- **Versión actual**: v0.5 — chat conversacional integrado
-- **Sprint completado**: 4b
-- **Próximo sprint**: 4 — módulos faltantes (Camino al Mundial, Viaje del hincha, AR/VR)
+- **Versión actual**: v0.6 — Sprint 4 completo (módulos faltantes + capa inmersiva)
+- **Sprint completado**: 4c
+- **Próximo sprint**: 5 — datos reales en módulos simulados
 - **Última actualización**: mayo 2026
 - **Días al kickoff**: ~31 (11 de junio de 2026)
 - **URL del repo**: https://github.com/diego-amweg/cabala-dashboard
@@ -97,7 +97,7 @@ cabala-dashboard/
 | 5 | En las calles | vivo | simulados |
 | 6 | Camino al Mundial | pendiente | — |
 | 7 | Viaje del hincha | vivo | reales (YouTube + Claude tagea) |
-| 8 | Capa AR/VR | pendiente | — |
+| 8 | Capa AR/VR | vivo | catálogo hardcoded + recomendación claude |
 | 9 | Asistente Claude | vivo | — |
 | 10 | Briefings automáticos | pendiente | — |
 
@@ -147,6 +147,7 @@ Estados: `pendiente` → `diseñado` → `vivo (mock)` → `vivo (real)`
 12. **Sin streaming en el chat** (Sprint 3b): respuestas no streameadas para simplicidad inicial. Streaming queda para sprint de polish si se nota como problema de UX.
 13. **Clasificación de contenido por LLM** (Sprint 4b, segunda iteración): el módulo Viaje del hincha intentó filtrar videos con keywords blacklist y falló. Panini cambiaba de palabra a "sobres", existen otros Mundiales en 2026 como el FMBB de pastores belgas, las predicciones se disfrazaban de preguntas. Pivoteamos a clasificación con Haiku batch, mismo patrón que usábamos para memes. Costo: ~$0.01 por refresh, trivial. Regla general adoptada: cualquier filtro de contenido generado por terceros usa LLM como decisor principal desde la primera iteración.
 14. **Tagging como compromiso semántico** (Sprint 4b, tercera iteración): el contenido real disponible para "Viaje del hincha" hoy es mayormente tours de ciudades sede hechos por youtubers de viajes, no vlogs de hinchas reales (esos van a explotar durante el torneo, no antes). En vez de apretar el filtro y dejar el módulo raquítico o renombrarlo, mantenemos el nombre "Viaje del hincha" y agregamos cuatro tags generados por Claude: vlog, tour, preparación, experiencia. Mismo patrón visual y de coloreo que el módulo de memes.
+15. 15. **Catálogo hardcoded + recomendación LLM** (Sprint 4c): para la Capa AR/VR no existe API confiable que liste servicios inmersivos disponibles para el Mundial 2026 en tiempo real. Pivoteamos a un patrón híbrido: catálogo estático mantenido en código (8 opciones que abarcan desde watch party presencial hasta Apple Vision Pro) + recomendación contextual generada por Haiku basada en el partido del momento y el perfil del usuario (sin headset, en Argentina). El catálogo se audita y actualiza manualmente cada cierto tiempo. Trade-off aceptado: información puede quedar desactualizada, pero la alternativa (no construir el módulo) era peor.
 
 ## Cronograma realizado
 
@@ -156,6 +157,7 @@ Estados: `pendiente` → `diseñado` → `vivo (mock)` → `vivo (real)`
 - **Sprint 3a** (mayo 2026): Claude API integrada para clasificación (cinco categorías), traducción al español rioplatense, scoring de relevancia, cache de enhancements para reducir costos.
 - **Sprint 3b** (mayo 2026): asistente conversacional flotante con contexto del dashboard. Sonnet 4.6, manejo de errores, UI con tipping indicator, sugerencias en estado vacío.
 - **Sprint 4b** (mayo 2026): integración con YouTube API. Tres iteraciones de filtrado: keywords brutas → keywords refinadas → clasificación con Haiku con tags. Módulo Viaje del hincha vivo con datos reales tageados (vlog / tour / preparación / experiencia).
+- **Sprint 4c** (mayo 2026): Capa AR/VR. Catálogo hardcoded de 8 opciones inmersivas + recomendación contextual con Haiku basada en partido y perfil del usuario. Cierra Sprint 4.
 
 ## Próximos sprints (orden definido por Diego)
 
