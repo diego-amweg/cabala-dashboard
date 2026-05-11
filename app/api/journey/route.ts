@@ -32,10 +32,42 @@ const cache = new Map<string, { data: VideoItem[]; cachedAt: number }>();
 const CACHE_TTL = 30 * 60 * 1000;
 
 const QUERIES = [
-  'vlog mundial 2026',
-  'viaje al mundial 2026',
-  'mundial 2026 hincha',
+  'rumbo al mundial 2026 vlog',
+  'viaje al mundial 2026 hincha',
+  'entradas mundial 2026 experiencia',
+  'argentinos viajando mundial 2026',
 ];
+
+const BLACKLIST_WORDS = [
+  'panini',
+  'cromos',
+  'álbum',
+  'album',
+  'sticker',
+  'predicción',
+  'prediccion',
+  'predict',
+  'dự đoán',
+  'reto ',
+  'reto:',
+  'reto-',
+  'reacción',
+  'reacciones',
+  'reaccion',
+  'apertura 2026',
+  'clausura 2026',
+  'liga profesional',
+  'futbol 2026 #',
+  'football 2026 #',
+];
+
+function isJourneyContent(item: VideoItem): boolean {
+  const text = (item.title + ' ' + item.channel).toLowerCase();
+  for (const word of BLACKLIST_WORDS) {
+    if (text.includes(word.toLowerCase())) return false;
+  }
+  return true;
+}
 
 function timeAgo(iso: string): string {
   const sec = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -51,7 +83,7 @@ async function searchYouTube(query: string, apiKey: string): Promise<{ items: Vi
     q: query,
     type: 'video',
     order: 'date',
-    maxResults: '10',
+    maxResults: '15',
     relevanceLanguage: 'es',
     key: apiKey,
   });
@@ -100,12 +132,19 @@ export async function GET(req: Request) {
   }
 
   const all: VideoItem[] = [];
-  const debug: Array<{ query: string; status: number; count: number; error?: string }> = [];
+  const debug: Array<{ query: string; status: number; raw: number; afterFilter: number; error?: string }> = [];
 
   for (const q of QUERIES) {
     const result = await searchYouTube(q, apiKey);
-    debug.push({ query: q, status: result.status, count: result.items.length, error: result.error });
-    all.push(...result.items);
+    const filtered = result.items.filter(isJourneyContent);
+    debug.push({
+      query: q,
+      status: result.status,
+      raw: result.items.length,
+      afterFilter: filtered.length,
+      error: result.error,
+    });
+    all.push(...filtered);
   }
 
   const seen = new Set<string>();
