@@ -145,6 +145,7 @@ Estados: `pendiente` → `diseñado` → `vivo (mock)` → `vivo (real)`
 10. **Path API misleading** (deuda técnica): el endpoint sigue en `/api/reddit/route.ts` aunque consume Bluesky. Se renombra a `/api/feed` en Sprint 7.
 11. **Componente Chat extraído** (Sprint 3b): extraído a `components/Chat.tsx` para evitar que `page.tsx` siga creciendo. Es el primer componente del proyecto fuera de `app/`.
 12. **Sin streaming en el chat** (Sprint 3b): respuestas no streameadas para simplicidad inicial. Streaming queda para sprint de polish si se nota como problema de UX.
+13. Clasificación de contenido por LLM (Sprint 4b, segunda iteración): el módulo Viaje del hincha intentó filtrar videos con keywords blacklist y falló (panini cambiaba de palabra, otros mundiales tomaban prestada la frase, predicciones se disfrazaban). Pivoteamos a clasificación con Haiku batch, mismo patrón que ya usábamos para memes. Costo: ~$0.01 por refresh, trivial. Regla general adoptada: filtrar contenido humano por LLM, no por keywords.
 
 ## Cronograma realizado
 
@@ -153,6 +154,7 @@ Estados: `pendiente` → `diseñado` → `vivo (mock)` → `vivo (real)`
 - **Sprint 2** (mayo 2026): intento de integración con Reddit falla por cambio de política → pivot a Bluesky con App Password auth → módulo de memes muestra datos reales del torneo.
 - **Sprint 3a** (mayo 2026): Claude API integrada para clasificación (cinco categorías), traducción al español rioplatense, scoring de relevancia, cache de enhancements para reducir costos.
 - **Sprint 3b** (mayo 2026): asistente conversacional flotante con contexto del dashboard. Sonnet 4.6, manejo de errores, UI con tipping indicator, sugerencias en estado vacío.
+- **Sprint 4b** (mayo 2026): integración con YouTube API, primer intento con blacklist keywords falla, pivot a clasificación con Claude Haiku.
 
 ## Próximos sprints (orden definido por Diego)
 
