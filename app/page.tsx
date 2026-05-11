@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Chat from '@/components/Chat';
+import RoadToWorldCup from '@/components/RoadToWorldCup';
 
 const CITIES = [
   { id: 'van', name: 'Vancouver', x: 90, y: 30 },
@@ -85,7 +86,7 @@ function pickFresh<T>(pool: T[], current: T[], keyFn: (i: T) => string): T {
   return source[Math.floor(Math.random() * source.length)];
 }
 
-const ALL_MODULES = ['map', 'senti', 'suf', 'memes', 'calle'] as const;
+const ALL_MODULES = ['map', 'senti', 'suf', 'memes', 'calle', 'road'] as const;
 type ModuleId = typeof ALL_MODULES[number];
 
 export default function CabalaDashboard() {
@@ -201,6 +202,8 @@ export default function CabalaDashboard() {
   else if (memesError) memesMeta = 'bluesky no respondió';
   else memesMeta = 'desde bluesky · clasificado por claude';
 
+  const tribeArray = Array.from(tribe);
+
   return (
     <main className="min-h-screen bg-stone-50 text-stone-900 selection:bg-orange-200">
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
@@ -237,6 +240,7 @@ export default function CabalaDashboard() {
             { id: 'suf' as const, label: 'sufrimiento' },
             { id: 'memes' as const, label: 'memes y polémicas' },
             { id: 'calle' as const, label: 'en las calles' },
+            { id: 'road' as const, label: 'Camino al Mundial' },
           ].map(m => {
             const on = activeMods.has(m.id);
             return (
@@ -331,6 +335,16 @@ export default function CabalaDashboard() {
           )}
         </div>
 
+        {activeMods.has('road') && (
+          <section className="mt-3">
+            <div className="mb-1.5 flex items-baseline justify-between">
+              <h2 className="text-xs font-medium tracking-wide text-stone-700">Camino al Mundial</h2>
+              <span className="text-[10px] text-stone-400">narrativa por selección · generada por claude</span>
+            </div>
+            <RoadToWorldCup tribe={tribeArray} />
+          </section>
+        )}
+
         {activeMods.has('memes') && (
           <section className="mt-3">
             <div className="mb-1.5 flex items-baseline justify-between">
@@ -362,10 +376,10 @@ export default function CabalaDashboard() {
         )}
 
         <footer className="mt-12 border-t border-stone-200 pt-4 text-center text-[10px] text-stone-400">
-          Cábala v0.3 · datos reales + claude + chat · construido por Diego con asistencia de Claude
+          Cábala v0.4 · datos reales + claude + chat + camino · construido por Diego con asistencia de Claude
         </footer>
       </div>
-      <Chat context={{ memes, tribe: Array.from(tribe), activeMods: Array.from(activeMods) }} />
+      <Chat context={{ memes, tribe: tribeArray, activeMods: Array.from(activeMods) }} />
     </main>
   );
 }
