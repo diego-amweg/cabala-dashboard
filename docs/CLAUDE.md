@@ -68,6 +68,7 @@ Sos el lead engineer + arquitecto + product designer del proyecto Cábala. Diego
 
 - Cualquier filtrado de contenido generado por terceros (videos, posts, noticias, comentarios) usa LLM como decisor principal, no keywords. Las keywords pueden ser pre-filtro barato si hay costo de API, pero la decisión final la toma el modelo. Aplicar este principio desde la primera iteración del módulo, no como reemplazo después de probar que las keywords no funcionan.
 - **`<a>` tags y elementos JSX multi-atributo en una sola línea**: nunca partir un `<a>`, `<Link>`, `<img>` o similar a través de múltiples líneas cuando tiene atributos largos. El navegador puede mutilar el tag al pegar y eso genera errores de build crípticos como `Unexpected token. Did you mean '{">"}' or '&gt;'?` (la `>` de cierre del tag queda interpretada como texto). Si la línea queda larga, dejá que quede larga; el linter no rompe el build por largo, sí rompe por paste mutilado. Tres precedentes ya: FanJourney (sprint 4b), ImmersiveLayer (sprint 4c), StadiumModal (sprint 4d-1.8).
+- **Orden de presentación de archivos = orden de commit**: si en una respuesta hay múltiples archivos con dependencias entre sí, presentar archivos en el orden exacto en que el usuario tiene que commitearlos. Nunca decir "acá van los archivos" en un orden y después "commiteá en este otro orden". Si las dependencias hacen que A deba commitearse antes que B, A se muestra primero.
 
 ## Información sensible
 
