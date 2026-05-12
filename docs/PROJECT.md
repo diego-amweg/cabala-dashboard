@@ -150,6 +150,7 @@ Estados: `pendiente` → `diseñado` → `vivo (mock)` → `vivo (real)`
 15. **Catálogo hardcoded + recomendación LLM** (Sprint 4c): para la Capa AR/VR no existe API confiable que liste servicios inmersivos disponibles para el Mundial 2026 en tiempo real. Pivoteamos a un patrón híbrido: catálogo estático mantenido en código (8 opciones que abarcan desde watch party presencial hasta Apple Vision Pro) + recomendación contextual generada por Haiku basada en el partido del momento y el perfil del usuario (sin headset, en Argentina). El catálogo se audita y actualiza manualmente cada cierto tiempo. Trade-off aceptado: información puede quedar desactualizada, pero la alternativa (no construir el módulo) era peor.
 16. **Convención de casing lowercase** (Sprint 4d-1.6): adoptamos minúsculas para nombres de módulos, toggles y headers de UI. Mantenemos mayúsculas solo para la marca ("Cábala"), sustantivos propios (selecciones, ciudades) y badges estilizados en uppercase tracking. Decisión estética alineada con el tagline "la superstición se hizo software".
 17. **Página separada `/fixture` con bracket SVG** (Sprint 4d-1.7): El fixture completo (62 partidos eliminatorios) vive en su propia ruta para no inflar el dashboard principal. Bracket en SVG puro con posiciones calculadas matemáticamente desde una lista plana de matches y conexiones explícitas. Slots pre-tournament en formato grupo (1A, 2B, 3CDFGH); se rellenan con equipos reales cuando llegue API-Football en Sprint 5. Link desde dashboard principal con estilo destacado (borde naranja grueso, botón de acción visible).
+18. **Modal de estadios vía Wikipedia REST API** (Sprint 4d-1.8): En vez de hardcodear 16 URLs de Wikipedia Commons (frágiles, con hashes MD5 impredecibles, sin garantía de mantenimiento), Cábala consume `https://en.wikipedia.org/api/rest_v1/page/summary/{article}` que devuelve imagen, descripción y link al artículo. Mapeo de ciudad ID → artículo Wikipedia hardcodeado en el endpoint `/api/stadium/[id]`. Capacidad y año de inauguración hardcodeados (Wikipedia summary no devuelve datos estructurados). Cache 24h vía Next revalidate. Pendiente decidir si traducir descripciones al español con Claude Haiku.
 
 ## Cronograma realizado
 
@@ -162,6 +163,7 @@ Estados: `pendiente` → `diseñado` → `vivo (mock)` → `vivo (real)`
 - **Sprint 4c** (mayo 2026): Capa AR/VR. Catálogo hardcoded de 8 opciones inmersivas + recomendación contextual con Haiku basada en partido y perfil del usuario. Cierra Sprint 4.
 - **Sprint 4d-1.6** (mayo 2026): consistencia de casing en lowercase + colorcito por día en calendario.
 - **Sprint 4d-1.7** (mayo 2026): página `/fixture` con bracket completo del Mundial 2026, link destacado desde el dashboard principal.
+- **Sprint 4d-1.8** (mayo 2026): modal de estadios en Ojo de Dios, datos vía Wikipedia REST API.
 
 ## Próximos sprints (orden definido por Diego)
 
