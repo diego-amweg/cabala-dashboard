@@ -8,6 +8,7 @@ import FanJourney from '@/components/FanJourney';
 import ImmersiveLayer from '@/components/ImmersiveLayer';
 import Calendar from '@/components/Calendar';
 import MemeCard from '@/components/MemeCard';
+import StadiumModal from '@/components/StadiumModal';
 
 const CURRENT_MATCH = 'octavos · México 1-1 Países Bajos · MetLife';
 const NEXT_MATCH = { teams: 'Brasil vs Croacia', date: 'vie 26 jun', time: '13:00 ART', venue: 'NRG · Houston' };
@@ -109,6 +110,7 @@ export default function CabalaDashboard() {
   ]);
   const [activeMods, setActiveMods] = useState<Set<ModuleId>>(new Set(ALL_MODULES));
   const [tribe, setTribe] = useState<Set<string>>(new Set(['ARG']));
+  const [selectedStadium, setSelectedStadium] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchMemes = async () => {
@@ -189,14 +191,7 @@ export default function CabalaDashboard() {
         {memes.map((m, i) => (
           <MemeCard
             key={i}
-            item={{
-              tag: m.tag,
-              text: m.text,
-              when: m.when,
-              url: m.url,
-              author: m.author,
-              imageUrl: m.imageUrl,
-            }}
+            item={{ tag: m.tag, text: m.text, when: m.when, url: m.url, author: m.author, imageUrl: m.imageUrl }}
           />
         ))}
       </div>
@@ -293,7 +288,7 @@ export default function CabalaDashboard() {
           <section className="mt-6">
             <div className="mb-1.5 flex items-baseline justify-between">
               <h2 className="text-xs font-medium tracking-wide text-stone-700">ojo de dios · 16 ciudades sede</h2>
-              <span className="text-[10px] text-stone-400">tamaño = intensidad ahora</span>
+              <span className="text-[10px] text-stone-400">click en una ciudad para ver el estadio</span>
             </div>
             <div className="rounded-xl border border-stone-200 bg-white p-4">
               <svg viewBox="0 0 660 280" className="h-auto w-full">
@@ -305,7 +300,8 @@ export default function CabalaDashboard() {
                 {CITIES.map(c => {
                   const i = intensity[c.id] ?? 30;
                   return (
-                    <g key={c.id}>
+                    <g key={c.id} onClick={() => setSelectedStadium(c.id)} style={{ cursor: 'pointer' }}>
+                      <circle cx={c.x} cy={c.y} r={14} fill="transparent" />
                       <circle cx={c.x} cy={c.y} r={3 + i / 12} fill="#f97316" opacity={0.18 + i / 220} />
                       <circle cx={c.x} cy={c.y} r={2.5} fill="#9a3412" />
                       <text x={c.x + 7} y={c.y + 3} fontSize="9" fill="#78716c">{c.name}</text>
@@ -362,9 +358,7 @@ export default function CabalaDashboard() {
               <h2 className="text-xs font-medium tracking-wide text-stone-700">memes, peleas y polémicas</h2>
               <span className="text-[10px] text-stone-400">{memesMeta}</span>
             </div>
-            <div className="rounded-xl border border-stone-200 bg-white p-3">
-              {memesContent}
-            </div>
+            <div className="rounded-xl border border-stone-200 bg-white p-3">{memesContent}</div>
           </section>
         )}
 
@@ -427,10 +421,11 @@ export default function CabalaDashboard() {
         )}
 
         <footer className="mt-12 border-t border-stone-200 pt-4 text-center text-[10px] text-stone-400">
-          Cábala v1.0 · sprint 4d-1.7 · construido por Diego con asistencia de Claude
+          Cábala v1.1 · sprint 4d-1.8 · construido por Diego con asistencia de Claude
         </footer>
       </div>
       <Chat context={{ memes, tribe: tribeArray, activeMods: Array.from(activeMods) }} />
+      <StadiumModal cityId={selectedStadium} onClose={() => setSelectedStadium(null)} />
     </main>
   );
 }
