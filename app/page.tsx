@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import Chat from '@/components/Chat';
 import RoadToWorldCup from '@/components/RoadToWorldCup';
 import FanJourney from '@/components/FanJourney';
@@ -248,6 +249,8 @@ export default function CabalaDashboard() {
           <span className="ml-auto truncate text-[10px] text-stone-400">{NEXT_MATCH.venue}</span>
         </div>
 
+        <Link href="/fixture" className="mt-3 flex items-center gap-3 rounded-md border-2 border-orange-300 bg-orange-50 px-4 py-2.5 text-xs transition-colors hover:bg-orange-100"><span className="font-medium text-orange-950">fixture completo del mundial</span><span className="text-orange-700">· 62 partidos · todas las eliminatorias</span><span className="ml-auto rounded bg-orange-500 px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-white">abrir →</span></Link>
+
         <div className="mt-6 flex flex-wrap gap-1.5">
           {[
             { id: 'map' as const, label: 'ojo de dios' },
@@ -424,7 +427,7 @@ export default function CabalaDashboard() {
         )}
 
         <footer className="mt-12 border-t border-stone-200 pt-4 text-center text-[10px] text-stone-400">
-          Cábala v0.9 · sprint 4d-1.6 · construido por Diego con asistencia de Claude
+          Cábala v1.0 · sprint 4d-1.7 · construido por Diego con asistencia de Claude
         </footer>
       </div>
       <Chat context={{ memes, tribe: tribeArray, activeMods: Array.from(activeMods) }} />
