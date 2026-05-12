@@ -48,16 +48,8 @@ export default function StadiumModal({ cityId, onClose }: Props) {
   if (!cityId) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 p-4 backdrop-blur-sm"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-    >
-      <div
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white shadow-xl"
-        onClick={e => e.stopPropagation()}
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 p-4 backdrop-blur-sm" onClick={onClose} role="dialog" aria-modal="true">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white shadow-xl" onClick={e => e.stopPropagation()}>
         {loading && (
           <div className="flex h-64 items-center justify-center">
             <p className="text-sm text-stone-400">cargando estadio...</p>
@@ -87,11 +79,7 @@ export default function StadiumModal({ cityId, onClose }: Props) {
                   <h3 className="text-lg font-medium text-stone-900">{data.name}</h3>
                   <p className="mt-0.5 text-xs text-stone-500">{data.city}</p>
                 </div>
-                <button
-                  onClick={onClose}
-                  className="-mr-1 rounded-md p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700"
-                  aria-label="cerrar"
-                >
+                <button onClick={onClose} className="-mr-1 rounded-md p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700" aria-label="cerrar">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
                 </button>
               </div>
@@ -108,12 +96,7 @@ export default function StadiumModal({ cityId, onClose }: Props) {
                 <p className="mt-4 text-xs italic text-stone-400">sin descripción disponible</p>
               )}
 
-              
-                href={data.wikiUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-4 inline-block text-[11px] text-stone-500 underline-offset-2 hover:text-stone-900 hover:underline"
-              >leer más en Wikipedia →</a>
+              <a href={data.wikiUrl} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block text-[11px] text-stone-500 underline-offset-2 hover:text-stone-900 hover:underline">leer más en Wikipedia →</a>
             </div>
           </>
         )}
