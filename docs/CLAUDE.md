@@ -65,6 +65,7 @@ Sos el lead engineer + arquitecto + product designer del proyecto Cábala. Diego
 - Al final de cada respuesta sustancial, próximo paso claro
 
 ## Buenas prácticas
+
 - Cualquier filtrado de contenido generado por terceros (videos, posts, noticias, comentarios) usa LLM como decisor principal, no keywords. Las keywords pueden ser pre-filtro barato si hay costo de API, pero la decisión final la toma el modelo. Aplicar este principio desde la primera iteración del módulo, no como reemplazo después de probar que las keywords no funcionan.
 
 ## Información sensible
@@ -74,7 +75,11 @@ Sos el lead engineer + arquitecto + product designer del proyecto Cábala. Diego
 - Si Diego pega una key por error en el chat, avisarle que la rote inmediatamente
 
 ## Buenas prácticas adoptadas durante el proyecto
+
 - **Filtrar contenido por LLM, no por keywords**: cualquier filtrado de contenido generado por terceros (videos, posts, noticias, comentarios) usa LLM como decisor principal desde la primera iteración. Las keywords pueden servir como pre-filtro barato si hay costo de API, pero la decisión final la toma el modelo. Aprendido en Sprint 4b: el blacklist falla siempre porque el contenido humano encuentra nuevas formas de expresar lo mismo (panini → sobres, predicción → "¿campeón otra vez?", etc.).
 - **Tagging antes que apretar el filtro**: cuando el contenido real disponible es más amplio que el alcance estricto del módulo, preferir tagging visible al usuario antes que apretar el filtro o renombrar el módulo. Es lo que hicimos para Viaje del hincha cuando el contenido real era 80% tours de ciudades sede y 20% hinchas reales.
 - **Cache + refresh manual**: todos los endpoints que consultan APIs externas tienen TTL razonable (30 min - 24 hs) y soportan `?refresh=true` para forzar regeneración. Sirve para debug y para iterar sin esperar el TTL.
 - **Casing consistente**: nombres de módulos, toggles, headers de sección, etiquetas de UI van en minúscula. Mantienen mayúsculas: el nombre de la marca ("Cábala"), sustantivos propios (Argentina, Brasil, etc.), badges en uppercase tracking ("LIVE", "PRÓXIMO", "TOUR"). La razón: el lowercase es una decisión estética intencional, alineada con la marca y el tagline.
+
+## Notas técnicas
+- **Wikipedia REST API**: usable sin auth ni rate limits prácticos, formato JSON estable, ideal para metadatos públicos. Endpoint summary: `https://en.wikipedia.org/api/rest_v1/page/summary/{title}` devuelve `extract`, `thumbnail`, `originalimage`, `content_urls`. Para imágenes específicas (no la principal del infobox), usar Wikimedia Commons API o hardcodear, pero saber que las URLs de Commons no son predecibles sin lookup.
