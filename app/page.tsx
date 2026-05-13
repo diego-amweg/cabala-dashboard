@@ -223,7 +223,7 @@ export default function CabalaDashboard() {
           <span className="ml-auto truncate text-[10px] text-stone-400">{NEXT_MATCH.venue}</span>
         </div>
 
-        <Link href="/fixture" className="mt-3 flex items-center gap-3 rounded-md border-2 border-orange-300 bg-orange-50 px-4 py-2.5 text-xs transition-colors hover:bg-orange-100"><span className="font-medium text-orange-950">fixture completo del mundial</span><span className="text-orange-700">· 62 partidos · todas las eliminatorias</span><span className="ml-auto rounded bg-orange-500 px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-white">abrir →</span></Link>
+        <Link href="/fixture" className="mt-3 flex items-center gap-3 rounded-md border-2 border-orange-300 bg-orange-50 px-4 py-2.5 text-xs transition-colors hover:bg-orange-100"><span className="font-medium text-orange-950">fixture completo del mundial</span><span className="text-orange-700">· 104 partidos · grupos + eliminatorias</span><span className="ml-auto rounded bg-orange-500 px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-white">abrir →</span></Link>
 
         <div className="mt-6 flex flex-wrap gap-1.5">
           {[
@@ -401,7 +401,7 @@ export default function CabalaDashboard() {
         )}
 
         <footer className="mt-12 border-t border-stone-200 pt-4 text-center text-[10px] text-stone-400">
-          Cábala v1.2 · sprint 4d-2 · construido por Diego con asistencia de Claude
+          Cábala v1.3 · sprint 4d-2-fix · construido por Diego con asistencia de Claude
         </footer>
       </div>
       <Chat context={{ memes, tribe: tribeArray, activeMods: Array.from(activeMods) }} />
