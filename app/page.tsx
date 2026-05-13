@@ -9,23 +9,32 @@ import ImmersiveLayer from '@/components/ImmersiveLayer';
 import Calendar from '@/components/Calendar';
 import MemeCard from '@/components/MemeCard';
 import StadiumModal from '@/components/StadiumModal';
+import TeamBadge from '@/components/TeamBadge';
 import { MAP_VIEWBOX, COUNTRY_PATHS, STATE_PATHS, CITIES } from '@/data/mapData';
 
 const CURRENT_MATCH = 'octavos · México 1-1 Países Bajos · MetLife';
 const NEXT_MATCH = { teams: 'Brasil vs Croacia', date: 'vie 26 jun', time: '13:00 ART', venue: 'NRG · Houston' };
 
-interface Team { code: string; name: string; sentiment: number; bg: string; fg: string; bar: string; }
+interface Team { code: string; name: string; sentiment: number; }
 
 const INITIAL_TEAMS: Team[] = [
-  { code: 'ARG', name: 'Argentina', sentiment: 88, bg: '#dbeafe', fg: '#1e3a8a', bar: '#3b82f6' },
-  { code: 'BRA', name: 'Brasil', sentiment: 76, bg: '#fef3c7', fg: '#78350f', bar: '#d97706' },
-  { code: 'MAR', name: 'Marruecos', sentiment: 81, bg: '#fee2e2', fg: '#7f1d1d', bar: '#dc2626' },
-  { code: 'JPN', name: 'Japón', sentiment: 73, bg: '#fce7f3', fg: '#831843', bar: '#db2777' },
-  { code: 'MEX', name: 'México', sentiment: 70, bg: '#dcfce7', fg: '#14532d', bar: '#16a34a' },
-  { code: 'ESP', name: 'España', sentiment: 65, bg: '#fef3c7', fg: '#78350f', bar: '#ea580c' },
-  { code: 'FRA', name: 'Francia', sentiment: 52, bg: '#dbeafe', fg: '#1e3a8a', bar: '#1d4ed8' },
-  { code: 'ENG', name: 'Inglaterra', sentiment: 38, bg: '#fee2e2', fg: '#7f1d1d', bar: '#ef4444' },
+  { code: 'ARG', name: 'Argentina',  sentiment: 88 },
+  { code: 'BRA', name: 'Brasil',     sentiment: 76 },
+  { code: 'MAR', name: 'Marruecos',  sentiment: 81 },
+  { code: 'JPN', name: 'Japón',      sentiment: 73 },
+  { code: 'MEX', name: 'México',     sentiment: 70 },
+  { code: 'ESP', name: 'España',     sentiment: 65 },
+  { code: 'FRA', name: 'Francia',    sentiment: 52 },
+  { code: 'ENG', name: 'Inglaterra', sentiment: 38 },
 ];
+
+function heatColor(s: number): { bg: string; fg: string } {
+  if (s < 35) return { bg: '#fee2e2', fg: '#991b1b' };
+  if (s < 50) return { bg: '#fed7aa', fg: '#9a3412' };
+  if (s < 65) return { bg: '#fef3c7', fg: '#78350f' };
+  if (s < 80) return { bg: '#d1fae5', fg: '#065f46' };
+  return { bg: '#a7f3d0', fg: '#064e3b' };
+}
 
 interface FeedItem { tag: 'meme' | 'polémica' | 'pelea' | 'viral' | 'noticia'; text: string; when: string; score?: number; url?: string; author?: string; query?: string; relevance?: number; imageUrl?: string; }
 interface CalleItem { city: string; text: string; when?: string; }
@@ -121,10 +130,7 @@ export default function CabalaDashboard() {
     const interval = setInterval(() => {
       setPulse(p => Math.max(40, Math.min(98, p + rand(-4, 5))));
       setLiveSec(s => (s + 2 >= 90 * 60 ? 60 : s + 2));
-      setTeams(prev => prev.map(t => ({
-        ...t,
-        sentiment: Math.max(15, Math.min(95, t.sentiment + rand(-2.5, 2.8))),
-      })));
+      setTeams(prev => prev.map(t => ({ ...t, sentiment: Math.max(15, Math.min(95, t.sentiment + rand(-2.5, 2.8))) })));
       setIntensity(prev => {
         const next: Record<string, number> = {};
         for (const k in prev) next[k] = Math.max(10, Math.min(100, prev[k] + rand(-8, 10)));
@@ -161,18 +167,13 @@ export default function CabalaDashboard() {
   const visibleSuf = tribe.size ? SUF.filter(s => tribe.has(s.code)) : SUF;
 
   let memesContent;
-  if (memesLoading) {
-    memesContent = <p className="px-2 text-xs text-stone-400">trayendo y procesando posts...</p>;
-  } else if (memesError) {
-    memesContent = <p className="px-2 text-xs text-stone-400">no se pudo conectar con bluesky.</p>;
-  } else if (memes.length === 0) {
-    memesContent = <p className="px-2 text-xs text-stone-400">sin posts por ahora.</p>;
-  } else {
+  if (memesLoading) memesContent = <p className="px-2 text-xs text-stone-400">trayendo y procesando posts...</p>;
+  else if (memesError) memesContent = <p className="px-2 text-xs text-stone-400">no se pudo conectar con bluesky.</p>;
+  else if (memes.length === 0) memesContent = <p className="px-2 text-xs text-stone-400">sin posts por ahora.</p>;
+  else {
     memesContent = (
       <div className="-mx-3 flex gap-3 overflow-x-auto px-3 pb-2 snap-x">
-        {memes.map((m, i) => (
-          <MemeCard key={i} item={{ tag: m.tag, text: m.text, when: m.when, url: m.url, author: m.author, imageUrl: m.imageUrl }} />
-        ))}
+        {memes.map((m, i) => <MemeCard key={i} item={{ tag: m.tag, text: m.text, when: m.when, url: m.url, author: m.author, imageUrl: m.imageUrl }} />)}
       </div>
     );
   }
@@ -271,12 +272,8 @@ export default function CabalaDashboard() {
             </div>
             <div className="rounded-xl border border-stone-200 bg-white p-4">
               <svg viewBox={MAP_VIEWBOX} className="h-auto w-full">
-                {COUNTRY_PATHS.map((d, i) => (
-                  <path key={`country-${i}`} d={d} fill="#f5f5f4" stroke="#d6d3d1" strokeWidth={0.8} />
-                ))}
-                {STATE_PATHS.map((d, i) => (
-                  <path key={`state-${i}`} d={d} fill="none" stroke="#e7e5e4" strokeWidth={0.4} />
-                ))}
+                {COUNTRY_PATHS.map((d, i) => <path key={`country-${i}`} d={d} fill="#f5f5f4" stroke="#d6d3d1" strokeWidth={0.8} />)}
+                {STATE_PATHS.map((d, i) => <path key={`state-${i}`} d={d} fill="none" stroke="#e7e5e4" strokeWidth={0.4} />)}
                 {CITIES.map(c => {
                   const i = intensity[c.id] ?? 30;
                   return (
@@ -293,24 +290,26 @@ export default function CabalaDashboard() {
           </section>
         )}
 
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div className="mt-3 grid gap-3 lg:grid-cols-2">
           {activeMods.has('senti') && (
             <section>
               <div className="mb-1.5 flex items-baseline justify-between">
                 <h2 className="text-xs font-medium tracking-wide text-stone-700">sentimiento</h2>
-                <span className="text-[10px] text-stone-400">índice de cariño</span>
+                <span className="text-[10px] text-stone-400">mapa de calor · cariño</span>
               </div>
-              <div className="rounded-xl border border-stone-200 bg-white p-3.5">
-                {sortedTeams.map(t => (
-                  <div key={t.code} className="flex items-center gap-2 py-1 text-xs">
-                    <span className="w-8 rounded py-0.5 text-center text-[9px] font-medium tracking-wider" style={{ backgroundColor: t.bg, color: t.fg }}>{t.code}</span>
-                    <span className="flex-1">{t.name}</span>
-                    <div className="h-1 w-14 overflow-hidden rounded bg-stone-100">
-                      <div className="h-full transition-[width] duration-700" style={{ width: `${t.sentiment}%`, backgroundColor: t.bar }} />
-                    </div>
-                    <span className="w-6 text-right font-mono text-[10px] tabular-nums text-stone-500">{Math.round(t.sentiment)}</span>
-                  </div>
-                ))}
+              <div className="rounded-xl border border-stone-200 bg-white p-3">
+                <div className="grid grid-cols-4 gap-1.5">
+                  {sortedTeams.map(t => {
+                    const c = heatColor(t.sentiment);
+                    return (
+                      <div key={t.code} className="flex flex-col items-center justify-center rounded-md p-2 transition-colors" style={{ backgroundColor: c.bg }}>
+                        <TeamBadge code={t.code} size="sm" />
+                        <span className="mt-1 text-[9px] font-medium tracking-wider" style={{ color: c.fg }}>{t.code}</span>
+                        <span className="font-mono text-sm font-medium tabular-nums" style={{ color: c.fg }}>{Math.round(t.sentiment)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </section>
           )}
@@ -318,15 +317,25 @@ export default function CabalaDashboard() {
             <section>
               <div className="mb-1.5 flex items-baseline justify-between">
                 <h2 className="text-xs font-medium tracking-wide text-stone-700">sufrimiento compartido</h2>
-                <span className="text-[10px] text-stone-400">en vivo</span>
+                <span className="text-[10px] text-stone-400">ansiedad en vivo</span>
               </div>
-              <div className="rounded-xl border border-stone-200 bg-white p-3.5">
-                {visibleSuf.map(s => (
-                  <div key={s.code} className="flex gap-2 py-1.5 text-xs leading-relaxed">
-                    <span className="w-14 shrink-0 text-[10px] font-medium text-stone-600">{s.label}</span>
-                    <span>{s.text}</span>
-                  </div>
-                ))}
+              <div className="space-y-2 rounded-xl border border-stone-200 bg-white p-3">
+                {visibleSuf.map(s => {
+                  const team = teams.find(tm => tm.code === s.code);
+                  const anxiety = team ? Math.round(100 - team.sentiment) : 50;
+                  return (
+                    <div key={s.code} className="flex items-start gap-3 rounded-md bg-stone-50 p-2.5">
+                      <TeamBadge code={s.code} size="md" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="text-[10px] font-medium uppercase tracking-wider text-stone-700">{s.label}</span>
+                          <span className="font-mono text-sm tabular-nums text-stone-900">{anxiety}<span className="ml-0.5 text-[9px] text-stone-400">ans</span></span>
+                        </div>
+                        <p className="mt-1 text-xs leading-relaxed text-stone-700">{s.text}</p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </section>
           )}
@@ -401,7 +410,7 @@ export default function CabalaDashboard() {
         )}
 
         <footer className="mt-12 border-t border-stone-200 pt-4 text-center text-[10px] text-stone-400">
-          Cábala v1.3 · sprint 4d-2-fix · construido por Diego con asistencia de Claude
+          Cábala v1.4 · sprint 4d-3a · construido por Diego con asistencia de Claude
         </footer>
       </div>
       <Chat context={{ memes, tribe: tribeArray, activeMods: Array.from(activeMods) }} />
