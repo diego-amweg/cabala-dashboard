@@ -151,6 +151,7 @@ Estados: `pendiente` → `diseñado` → `vivo (mock)` → `vivo (real)`
 16. **Convención de casing lowercase** (Sprint 4d-1.6): adoptamos minúsculas para nombres de módulos, toggles y headers de UI. Mantenemos mayúsculas solo para la marca ("Cábala"), sustantivos propios (selecciones, ciudades) y badges estilizados en uppercase tracking. Decisión estética alineada con el tagline "la superstición se hizo software".
 17. **Página separada `/fixture` con bracket SVG** (Sprint 4d-1.7): El fixture completo (62 partidos eliminatorios) vive en su propia ruta para no inflar el dashboard principal. Bracket en SVG puro con posiciones calculadas matemáticamente desde una lista plana de matches y conexiones explícitas. Slots pre-tournament en formato grupo (1A, 2B, 3CDFGH); se rellenan con equipos reales cuando llegue API-Football en Sprint 5. Link desde dashboard principal con estilo destacado (borde naranja grueso, botón de acción visible).
 18. **Modal de estadios: descripciones en español hardcodeadas + imagen vía Wikipedia REST API** (Sprint 4d-1.8): Las descripciones de los 16 estadios viven como constantes en español dentro del endpoint `/api/stadium/[id]`. Esto evita el costo de traducción runtime (lo que se proponía inicialmente con Haiku) y garantiza estabilidad: "una vez y queda". Las imágenes sí se traen dinámicamente de `https://en.wikipedia.org/api/rest_v1/page/summary/{article}` con cache de 7 días (las imágenes pueden mejorar con el tiempo, las descripciones no necesitan re-traducirse). Mapping ciudad → artículo de Wikipedia hardcodeado.
+19. **Mapa de Norteamérica en Ojo de Dios** (Sprint 4d-2): Reemplaza el SVG anterior (líneas punteadas dividiendo países más puntos a ojo) por un mapa real con siluetas de Canadá, EE.UU. y México + 92 estados/provincias. Datos de Natural Earth admin 0 + admin 1 a 1:10m resolution, clipeados a lat [14,54] / lon [-130,-65], proyectados con Web Mercator, simplificados con Douglas-Peucker (tolerance 12km). Total: 31KB de paths SVG hardcodeados en `data/mapData.ts`. Las 16 sedes se recoordinan a sus lat/lon reales y se proyectan con la misma proyección del mapa. viewBox pasa de 660x280 a 660x400 para acomodar el aspect ratio natural de Norteamérica. Cero dependencias npm nuevas; el procesamiento de datos se hizo offline en Python (shapely + pyproj) y solo el resultado se commitea.
 
 ## Cronograma realizado
 
@@ -164,6 +165,7 @@ Estados: `pendiente` → `diseñado` → `vivo (mock)` → `vivo (real)`
 - **Sprint 4d-1.6** (mayo 2026): consistencia de casing en lowercase + colorcito por día en calendario.
 - **Sprint 4d-1.7** (mayo 2026): página `/fixture` con bracket completo del Mundial 2026, link destacado desde el dashboard principal.
 - **Sprint 4d-1.8** (mayo 2026): modal de estadios en Ojo de Dios, datos vía Wikipedia REST API.
+- **Sprint 4d-2** (mayo 2026): mapa de fondo en Ojo de Dios con países + estados/provincias visibles, 16 sedes en coordenadas geográficas reales.
 
 ## Próximos sprints (orden definido por Diego)
 
