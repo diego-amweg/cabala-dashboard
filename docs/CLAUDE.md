@@ -85,3 +85,5 @@ Sos el lead engineer + arquitecto + product designer del proyecto Cábala. Diego
 
 ## Notas técnicas
 - **Wikipedia REST API**: usable sin auth ni rate limits prácticos, formato JSON estable, ideal para metadatos públicos. Endpoint summary: `https://en.wikipedia.org/api/rest_v1/page/summary/{title}` devuelve `extract`, `thumbnail`, `originalimage`, `content_urls`. Para imágenes específicas (no la principal del infobox), usar Wikimedia Commons API o hardcodear, pero saber que las URLs de Commons no son predecibles sin lookup.
+- **Datos geográficos**: el mapa de Cábala usa Natural Earth admin 0 + admin 1 a 1:10m resolution. El procesamiento (clip, proyección Web Mercator, simplificación Douglas-Peucker) se hace offline con Python (shapely + pyproj), y solo el resultado se commitea como `data/mapData.ts`. No agregar dependencias npm de mapeo en runtime; data hardcodeada es suficiente para 16 sedes fijas. Si en el futuro hace falta zoom/pan, recién ahí evaluar librerías como react-simple-maps.
+
