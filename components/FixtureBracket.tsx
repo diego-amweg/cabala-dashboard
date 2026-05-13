@@ -132,7 +132,7 @@ function getInPoint(match: Match, fromSide: string): { x: number; y: number } {
 export default function FixtureBracket() {
   const matchMap = new Map(MATCHES.map(m => [m.id, m]));
   const columnHeaders: { x: number; label: string; highlight?: boolean }[] = [
-    { x: 0, label: '32avos' },
+    { x: 0, label: '16avos' },
     { x: COL_GAP, label: 'octavos' },
     { x: COL_GAP * 2, label: 'cuartos' },
     { x: COL_GAP * 3, label: 'semis' },
@@ -140,7 +140,7 @@ export default function FixtureBracket() {
     { x: COL_GAP * 5, label: 'semis' },
     { x: COL_GAP * 6, label: 'cuartos' },
     { x: COL_GAP * 7, label: 'octavos' },
-    { x: COL_GAP * 8, label: '32avos' },
+    { x: COL_GAP * 8, label: '16avos' },
   ];
 
   return (
