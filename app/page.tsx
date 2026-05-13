@@ -9,28 +9,10 @@ import ImmersiveLayer from '@/components/ImmersiveLayer';
 import Calendar from '@/components/Calendar';
 import MemeCard from '@/components/MemeCard';
 import StadiumModal from '@/components/StadiumModal';
+import { MAP_VIEWBOX, COUNTRY_PATHS, STATE_PATHS, CITIES } from '@/data/mapData';
 
 const CURRENT_MATCH = 'octavos · México 1-1 Países Bajos · MetLife';
 const NEXT_MATCH = { teams: 'Brasil vs Croacia', date: 'vie 26 jun', time: '13:00 ART', venue: 'NRG · Houston' };
-
-const CITIES = [
-  { id: 'van', name: 'Vancouver', x: 90, y: 30 },
-  { id: 'sea', name: 'Seattle', x: 95, y: 75 },
-  { id: 'sf', name: 'San Francisco', x: 75, y: 115 },
-  { id: 'la', name: 'Los Ángeles', x: 105, y: 155 },
-  { id: 'kc', name: 'Kansas City', x: 320, y: 100 },
-  { id: 'dal', name: 'Dallas', x: 300, y: 155 },
-  { id: 'hou', name: 'Houston', x: 320, y: 180 },
-  { id: 'atl', name: 'Atlanta', x: 460, y: 145 },
-  { id: 'mia', name: 'Miami', x: 495, y: 185 },
-  { id: 'phi', name: 'Filadelfia', x: 535, y: 115 },
-  { id: 'nyc', name: 'NY/NJ', x: 570, y: 95 },
-  { id: 'bos', name: 'Boston', x: 600, y: 78 },
-  { id: 'tor', name: 'Toronto', x: 455, y: 75 },
-  { id: 'mty', name: 'Monterrey', x: 305, y: 215 },
-  { id: 'gdl', name: 'Guadalajara', x: 265, y: 248 },
-  { id: 'cdmx', name: 'CDMX', x: 320, y: 252 },
-];
 
 interface Team { code: string; name: string; sentiment: number; bg: string; fg: string; bar: string; }
 
@@ -189,10 +171,7 @@ export default function CabalaDashboard() {
     memesContent = (
       <div className="-mx-3 flex gap-3 overflow-x-auto px-3 pb-2 snap-x">
         {memes.map((m, i) => (
-          <MemeCard
-            key={i}
-            item={{ tag: m.tag, text: m.text, when: m.when, url: m.url, author: m.author, imageUrl: m.imageUrl }}
-          />
+          <MemeCard key={i} item={{ tag: m.tag, text: m.text, when: m.when, url: m.url, author: m.author, imageUrl: m.imageUrl }} />
         ))}
       </div>
     );
@@ -288,15 +267,16 @@ export default function CabalaDashboard() {
           <section className="mt-6">
             <div className="mb-1.5 flex items-baseline justify-between">
               <h2 className="text-xs font-medium tracking-wide text-stone-700">ojo de dios · 16 ciudades sede</h2>
-              <span className="text-[10px] text-stone-400">click en una ciudad para ver el estadio</span>
+              <span className="text-[10px] text-stone-400">click en una ciudad · tamaño = intensidad</span>
             </div>
             <div className="rounded-xl border border-stone-200 bg-white p-4">
-              <svg viewBox="0 0 660 280" className="h-auto w-full">
-                <text x="20" y="18" fontSize="9" fill="#a8a29e" letterSpacing="0.5">CANADÁ</text>
-                <text x="20" y="120" fontSize="9" fill="#a8a29e" letterSpacing="0.5">ESTADOS UNIDOS</text>
-                <text x="20" y="240" fontSize="9" fill="#a8a29e" letterSpacing="0.5">MÉXICO</text>
-                <line x1="20" y1="55" x2="640" y2="55" stroke="#e7e5e4" strokeDasharray="2 4" />
-                <line x1="20" y1="195" x2="640" y2="195" stroke="#e7e5e4" strokeDasharray="2 4" />
+              <svg viewBox={MAP_VIEWBOX} className="h-auto w-full">
+                {COUNTRY_PATHS.map((d, i) => (
+                  <path key={`country-${i}`} d={d} fill="#f5f5f4" stroke="#d6d3d1" strokeWidth={0.8} />
+                ))}
+                {STATE_PATHS.map((d, i) => (
+                  <path key={`state-${i}`} d={d} fill="none" stroke="#e7e5e4" strokeWidth={0.4} />
+                ))}
                 {CITIES.map(c => {
                   const i = intensity[c.id] ?? 30;
                   return (
@@ -304,7 +284,7 @@ export default function CabalaDashboard() {
                       <circle cx={c.x} cy={c.y} r={14} fill="transparent" />
                       <circle cx={c.x} cy={c.y} r={3 + i / 12} fill="#f97316" opacity={0.18 + i / 220} />
                       <circle cx={c.x} cy={c.y} r={2.5} fill="#9a3412" />
-                      <text x={c.x + 7} y={c.y + 3} fontSize="9" fill="#78716c">{c.name}</text>
+                      <text x={c.x + 7} y={c.y + 3} fontSize="9" fill="#44403c" style={{ paintOrder: 'stroke', stroke: '#ffffff', strokeWidth: 2 }}>{c.name}</text>
                     </g>
                   );
                 })}
@@ -421,7 +401,7 @@ export default function CabalaDashboard() {
         )}
 
         <footer className="mt-12 border-t border-stone-200 pt-4 text-center text-[10px] text-stone-400">
-          Cábala v1.1 · sprint 4d-1.8 · construido por Diego con asistencia de Claude
+          Cábala v1.2 · sprint 4d-2 · construido por Diego con asistencia de Claude
         </footer>
       </div>
       <Chat context={{ memes, tribe: tribeArray, activeMods: Array.from(activeMods) }} />
