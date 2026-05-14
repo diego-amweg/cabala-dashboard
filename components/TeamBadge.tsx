@@ -7,12 +7,16 @@ const SIZES: Record<'sm' | 'md' | 'lg', string> = {
 const ISO_MAP: Record<string, string> = {
   ARG: 'ar',
   BRA: 'br',
-  MAR: 'ma',
-  JPN: 'jp',
+  URU: 'uy',
+  PAR: 'py',
+  COL: 'co',
+  ECU: 'ec',
   MEX: 'mx',
-  ESP: 'es',
+  USA: 'us',
+  CAN: 'ca',
   FRA: 'fr',
-  ENG: 'gb-eng',
+  ESP: 'es',
+  JPN: 'jp',
 };
 
 interface Props {
