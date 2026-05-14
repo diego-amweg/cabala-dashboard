@@ -18,14 +18,18 @@ const NEXT_MATCH = { teams: 'Brasil vs Croacia', date: 'vie 26 jun', time: '13:0
 interface Team { code: string; name: string; sentiment: number; }
 
 const INITIAL_TEAMS: Team[] = [
-  { code: 'ARG', name: 'Argentina',  sentiment: 88 },
-  { code: 'BRA', name: 'Brasil',     sentiment: 76 },
-  { code: 'MAR', name: 'Marruecos',  sentiment: 81 },
-  { code: 'JPN', name: 'Japón',      sentiment: 73 },
-  { code: 'MEX', name: 'México',     sentiment: 70 },
-  { code: 'ESP', name: 'España',     sentiment: 65 },
-  { code: 'FRA', name: 'Francia',    sentiment: 52 },
-  { code: 'ENG', name: 'Inglaterra', sentiment: 38 },
+  { code: 'ARG', name: 'Argentina',      sentiment: 88 },
+  { code: 'BRA', name: 'Brasil',         sentiment: 76 },
+  { code: 'URU', name: 'Uruguay',        sentiment: 82 },
+  { code: 'PAR', name: 'Paraguay',       sentiment: 70 },
+  { code: 'COL', name: 'Colombia',       sentiment: 75 },
+  { code: 'ECU', name: 'Ecuador',        sentiment: 68 },
+  { code: 'MEX', name: 'México',         sentiment: 72 },
+  { code: 'USA', name: 'Estados Unidos', sentiment: 60 },
+  { code: 'CAN', name: 'Canadá',         sentiment: 55 },
+  { code: 'FRA', name: 'Francia',        sentiment: 55 },
+  { code: 'ESP', name: 'España',         sentiment: 65 },
+  { code: 'JPN', name: 'Japón',          sentiment: 73 },
 ];
 
 function heatColor(s: number): { bg: string; fg: string } {
@@ -60,12 +64,18 @@ const CALLE: CalleItem[] = [
 ];
 
 const SUF: SufItem[] = [
-  { code: 'ARG', label: 'Argentina', text: '37 millones conteniendo la respiración. cuadras enteras vacías' },
-  { code: 'BRA', label: 'Brasil', text: 'rating histórico de TV: 78% de share nacional. Globo dispara' },
-  { code: 'MAR', label: 'Marruecos', text: 'rezo colectivo en Casablanca antes del segundo tiempo' },
-  { code: 'ENG', label: 'Inglaterra', text: 'It\u2019s coming home trending por 14a vez consecutiva' },
-  { code: 'MEX', label: 'México', text: 'CDMX paralizada. el Zócalo se transformó en estadio gigante' },
-  { code: 'JPN', label: 'Japón', text: 'cánticos sincronizados desde Tokio hasta el MetLife. 95k cantando' },
+  { code: 'ARG', label: 'Argentina',      text: '37 millones conteniendo la respiración. cuadras enteras vacías' },
+  { code: 'BRA', label: 'Brasil',         text: 'rating histórico de TV: 78% de share nacional. Globo dispara' },
+  { code: 'URU', label: 'Uruguay',        text: 'el país clausurado por 90 minutos. la celeste se siente en la nuca' },
+  { code: 'PAR', label: 'Paraguay',       text: 'Asunción detenida. la albirroja vuelve después de 16 años' },
+  { code: 'COL', label: 'Colombia',       text: 'Bogotá baila antes del pitazo. cumbia en cada cuadra' },
+  { code: 'ECU', label: 'Ecuador',        text: 'Quito y Guayaquil paralizadas. tricolor desde el balcón hasta el techo' },
+  { code: 'MEX', label: 'México',         text: 'CDMX paralizada. el Zócalo se transformó en estadio gigante' },
+  { code: 'USA', label: 'Estados Unidos', text: 'sports bars al máximo. Coca-Cola dispara comerciales nuevos cada hora' },
+  { code: 'CAN', label: 'Canadá',         text: 'Toronto y Vancouver con cola en los pubs. timbits agotados a las dos cuadras' },
+  { code: 'FRA', label: 'Francia',        text: 'tensión mezclada con orgullo. la sombra de Qatar 2022 todavía pesa' },
+  { code: 'ESP', label: 'España',         text: 'Madrid y Barcelona en pausa. los bares con pantalla copan las aceras' },
+  { code: 'JPN', label: 'Japón',          text: 'cánticos sincronizados desde Tokio. 95k cantando como uno solo' },
 ];
 
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
@@ -410,7 +420,7 @@ export default function CabalaDashboard() {
         )}
 
         <footer className="mt-12 border-t border-stone-200 pt-4 text-center text-[10px] text-stone-400">
-          Cábala v1.4 · sprint 4d-3a · construido por Diego con asistencia de Claude
+          Cábala v1.5 · sprint 4d-3a-tribu12 · construido por Diego con asistencia de Claude
         </footer>
       </div>
       <Chat context={{ memes, tribe: tribeArray, activeMods: Array.from(activeMods) }} />
