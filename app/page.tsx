@@ -110,7 +110,7 @@ export default function CabalaDashboard() {
     { ...CALLE[7], when: '3m' },
   ]);
   const [activeMods, setActiveMods] = useState<Set<ModuleId>>(new Set(ALL_MODULES));
-  const [tribe, setTribe] = useState<Set<string>>(new Set(['ARG']));
+  const [tribe, setTribe] = useState<Set<string>>(new Set(INITIAL_TEAMS.map(t => t.code)));
   const [selectedStadium, setSelectedStadium] = useState<string | null>(null);
 
   useEffect(() => {
