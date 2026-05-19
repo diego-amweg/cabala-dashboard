@@ -103,12 +103,6 @@ export default function CabalaDashboard() {
   const [memes, setMemes] = useState<FeedItem[]>([]);
   const [memesLoading, setMemesLoading] = useState(true);
   const [memesError, setMemesError] = useState(false);
-  const [calleShown, setCalleShown] = useState<CalleItem[]>([
-    { ...CALLE[0], when: 'ahora' },
-    { ...CALLE[2], when: '30s' },
-    { ...CALLE[4], when: '1m' },
-    { ...CALLE[7], when: '3m' },
-  ]);
   const [activeMods, setActiveMods] = useState<Set<ModuleId>>(new Set(ALL_MODULES));
   const [tribe, setTribe] = useState<Set<string>>(new Set(INITIAL_TEAMS.map(t => t.code)));
   const [selectedStadium, setSelectedStadium] = useState<string | null>(null);
@@ -146,12 +140,6 @@ export default function CabalaDashboard() {
         for (const k in prev) next[k] = Math.max(10, Math.min(100, prev[k] + rand(-8, 10)));
         return next;
       });
-      if (Math.random() > 0.5) {
-        setCalleShown(prev => [
-          { ...pickFresh(CALLE, prev, c => c.city + c.text), when: 'ahora' },
-          ...prev.slice(0, 3),
-        ]);
-      }
     }, 2400);
     return () => clearInterval(interval);
   }, []);
@@ -198,7 +186,7 @@ export default function CabalaDashboard() {
 
   return (
     <main className="min-h-screen bg-stone-50 text-stone-900 selection:bg-orange-200">
-      <style dangerouslySetInnerHTML={{__html: `@keyframes cabala-heartbeat { 0%, 100% { transform: scale(1); } 25% { transform: scale(1.25); } 50% { transform: scale(0.95); } 75% { transform: scale(1.18); } }`}} />
+      <style dangerouslySetInnerHTML={{__html: `@keyframes cabala-heartbeat { 0%, 100% { transform: scale(1); } 25% { transform: scale(1.25); } 50% { transform: scale(0.95); } 75% { transform: scale(1.18); } } @keyframes cabala-ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } } .ticker-track { animation: cabala-ticker 90s linear infinite; } .ticker-track:hover { animation-play-state: paused; }`}} />
 
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
         <header className="flex flex-col gap-3 border-b border-stone-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
@@ -365,16 +353,19 @@ export default function CabalaDashboard() {
           <section className="mt-3">
             <div className="mb-1.5 flex items-baseline justify-between">
               <h2 className="text-xs font-medium tracking-wide text-stone-700">en las calles</h2>
-              <span className="text-[10px] text-stone-400">ambiente desde las sedes</span>
+              <span className="text-[10px] text-stone-400">ambiente desde las sedes · pasá el cursor para pausar</span>
             </div>
-            <div className="rounded-xl border border-stone-200 bg-white p-3.5">
-              {calleShown.map((c, i) => (
-                <div key={i} className="mb-1.5 rounded-md bg-stone-100 px-2.5 py-2 text-xs leading-relaxed last:mb-0">
-                  <span className="float-right ml-2 font-mono text-[10px] tabular-nums text-stone-400">{c.when}</span>
-                  <span className="mr-1.5 font-medium">{c.city}</span>
-                  {c.text}
-                </div>
-              ))}
+            <div className="overflow-hidden rounded-xl border border-stone-200 bg-white py-2.5">
+              <div className="ticker-track flex whitespace-nowrap will-change-transform">
+                {[...CALLE, ...CALLE].map((c, i) => (
+                  <span key={i} className="mr-8 inline-flex shrink-0 items-baseline gap-2 text-xs leading-relaxed">
+                    <span className="font-medium text-stone-700">{c.city}</span>
+                    <span className="text-stone-500">·</span>
+                    <span className="text-stone-600">{c.text}</span>
+                    <span className="ml-2 text-stone-300">◆</span>
+                  </span>
+                ))}
+              </div>
             </div>
           </section>
         )}
@@ -420,7 +411,7 @@ export default function CabalaDashboard() {
         )}
 
         <footer className="mt-12 border-t border-stone-200 pt-4 text-center text-[10px] text-stone-400">
-          Cábala v1.5 · sprint 4d-3a-tribu12 · construido por Diego con asistencia de Claude
+          Cábala v1.5 · sprint 4d-3c · construido por Diego con asistencia de Claude
         </footer>
       </div>
       <Chat context={{ memes, tribe: tribeArray, activeMods: Array.from(activeMods) }} />
