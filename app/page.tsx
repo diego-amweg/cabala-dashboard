@@ -9,6 +9,7 @@ import ImmersiveLayer from '@/components/ImmersiveLayer';
 import Calendar from '@/components/Calendar';
 import MemeCard from '@/components/MemeCard';
 import StadiumModal from '@/components/StadiumModal';
+import Ticker from '@/components/Ticker';
 import TeamBadge from '@/components/TeamBadge';
 import { MAP_VIEWBOX, COUNTRY_PATHS, STATE_PATHS, CITIES } from '@/data/mapData';
 
@@ -186,7 +187,7 @@ export default function CabalaDashboard() {
 
   return (
     <main className="min-h-screen bg-stone-50 text-stone-900 selection:bg-orange-200">
-      <style dangerouslySetInnerHTML={{__html: `@keyframes cabala-heartbeat { 0%, 100% { transform: scale(1); } 25% { transform: scale(1.25); } 50% { transform: scale(0.95); } 75% { transform: scale(1.18); } } @keyframes cabala-ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } } .ticker-track { animation: cabala-ticker 90s linear infinite; } .ticker-track:hover { animation-play-state: paused; }`}} />
+      <style dangerouslySetInnerHTML={{__html: `@keyframes cabala-heartbeat { 0%, 100% { transform: scale(1); } 25% { transform: scale(1.25); } 50% { transform: scale(0.95); } 75% { transform: scale(1.18); } }`}} />
 
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
         <header className="flex flex-col gap-3 border-b border-stone-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
@@ -353,20 +354,9 @@ export default function CabalaDashboard() {
           <section className="mt-3">
             <div className="mb-1.5 flex items-baseline justify-between">
               <h2 className="text-xs font-medium tracking-wide text-stone-700">en las calles</h2>
-              <span className="text-[10px] text-stone-400">ambiente desde las sedes · pasá el cursor para pausar</span>
+              <span className="text-[10px] text-stone-400">ambiente desde las sedes · arrastrá o usá ← →</span>
             </div>
-            <div className="overflow-hidden rounded-xl border border-stone-200 bg-white py-2.5">
-              <div className="ticker-track flex whitespace-nowrap will-change-transform">
-                {[...CALLE, ...CALLE].map((c, i) => (
-                  <span key={i} className="mr-8 inline-flex shrink-0 items-baseline gap-2 text-xs leading-relaxed">
-                    <span className="font-medium text-stone-700">{c.city}</span>
-                    <span className="text-stone-500">·</span>
-                    <span className="text-stone-600">{c.text}</span>
-                    <span className="ml-2 text-stone-300">◆</span>
-                  </span>
-                ))}
-              </div>
-            </div>
+            <Ticker items={CALLE} />
           </section>
         )}
 
