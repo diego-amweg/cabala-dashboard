@@ -215,7 +215,7 @@ export default function CabalaDashboard() {
             <p className="mt-1 text-sm text-stone-500">la superstición se hizo software</p>
           </div>
           <div className="flex flex-col items-start gap-2 sm:items-end">
-            <button onClick={shareCabala} className="inline-flex items-center gap-1.5 rounded-md border border-stone-200 px-2.5 py-1 text-xs text-stone-600 transition-colors hover:border-orange-300 hover:text-orange-900"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>{shared ? 'copiado' : 'compartir'}</button>
+          <button onClick={shareCabala} className="inline-flex items-center gap-1.5 rounded-md border border-orange-300 bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-900 transition-colors hover:bg-orange-100"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>{shared ? 'copiado' : 'compartir'}</button>
             <div className="font-mono text-xs text-stone-500">día 12 · jue 25 jun · 18:42 ART</div>
             <div className="flex items-center gap-2.5 rounded-md bg-stone-100 px-3 py-1.5">
               <span className="text-[10px] uppercase tracking-wider text-stone-500">pulso global</span>
@@ -254,6 +254,7 @@ export default function CabalaDashboard() {
             { id: 'calle' as const, label: 'en las calles' },
             { id: 'journey' as const, label: 'viaje del hincha' },
             { id: 'calendar' as const, label: 'calendario' },
+            { id: 'gifs' as const, label: 'gifs' },
             { id: 'road' as const, label: 'camino al mundial' },
             { id: 'immersive' as const, label: 'inmersivo' },
           ].map(m => {
