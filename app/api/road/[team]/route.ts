@@ -68,7 +68,7 @@ export async function GET(
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ error: 'no api key configurada' }, { status: 500 });
+    return NextResponse.json({ error: 'no api key configurada' });
   }
 
   const prompt = `Generá el "camino al Mundial 2026" para la selección de ${teamName} (código ${teamCode}).
@@ -127,7 +127,7 @@ Reglas estrictas:
 
     if (!res.ok) {
       const errText = await res.text();
-      return NextResponse.json({ error: `claude HTTP ${res.status}: ${errText.slice(0, 200)}` }, { status: 500 });
+      return NextResponse.json({ error: `claude HTTP ${res.status}: ${errText.slice(0, 200)}` });
     }
 
     const data = await res.json();
@@ -135,20 +135,20 @@ Reglas estrictas:
 
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      return NextResponse.json({ error: 'no se pudo extraer json', preview: responseText.slice(0, 200) }, { status: 500 });
+      return NextResponse.json({ error: 'no se pudo extraer json', preview: responseText.slice(0, 200) });
     }
 
     let road: RoadToWorldCup;
     try {
       road = JSON.parse(jsonMatch[0]);
     } catch {
-      return NextResponse.json({ error: 'json invalido', preview: jsonMatch[0].slice(0, 200) }, { status: 500 });
+      return NextResponse.json({ error: 'json invalido', preview: jsonMatch[0].slice(0, 200) });
     }
 
     cache.set(teamCode, { data: road, cachedAt: Date.now() });
 
     return NextResponse.json({ ...road, cached: false });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : 'unknown' }, { status: 500 });
+    return NextResponse.json({ error: e instanceof Error ? e.message : 'unknown' });
   }
 }

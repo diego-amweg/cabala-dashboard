@@ -96,11 +96,14 @@ export default function CabalaDashboard() {
   const [pulse, setPulse] = useState(78);
   const [liveSec, setLiveSec] = useState(60);
   const [teams, setTeams] = useState<Team[]>(INITIAL_TEAMS);
-  const [intensity, setIntensity] = useState<Record<string, number>>(() => {
+  const [intensity, setIntensity] = useState<Record<string, number>>({});
+
+  // Init aleatorio en cliente para evitar mismatch de hidratación (SSR vs CSR con Math.random)
+  useEffect(() => {
     const obj: Record<string, number> = {};
     CITIES.forEach(c => { obj[c.id] = 30 + Math.random() * 60; });
-    return obj;
-  });
+    setIntensity(obj);
+  }, []);
   const [memes, setMemes] = useState<FeedItem[]>([]);
   const [memesLoading, setMemesLoading] = useState(true);
   const [memesError, setMemesError] = useState(false);
