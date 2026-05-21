@@ -8,6 +8,7 @@ import FanJourney from '@/components/FanJourney';
 import ImmersiveLayer from '@/components/ImmersiveLayer';
 import Calendar from '@/components/Calendar';
 import MemeCard from '@/components/MemeCard';
+import GifWall from '@/components/GifWall';
 import StadiumModal from '@/components/StadiumModal';
 import Ticker from '@/components/Ticker';
 import TeamBadge from '@/components/TeamBadge';
@@ -89,7 +90,7 @@ function pickFresh<T>(pool: T[], current: T[], keyFn: (i: T) => string): T {
   return source[Math.floor(Math.random() * source.length)];
 }
 
-const ALL_MODULES = ['map', 'senti', 'suf', 'memes', 'calle', 'journey', 'calendar', 'road', 'immersive'] as const;
+const ALL_MODULES = ['map', 'senti', 'suf', 'memes', 'calle', 'journey', 'calendar', 'gifs', 'road', 'immersive'] as const;
 type ModuleId = typeof ALL_MODULES[number];
 
 export default function CabalaDashboard() {
@@ -110,6 +111,7 @@ export default function CabalaDashboard() {
   const [activeMods, setActiveMods] = useState<Set<ModuleId>>(new Set(ALL_MODULES));
   const [tribe, setTribe] = useState<Set<string>>(new Set(INITIAL_TEAMS.map(t => t.code)));
   const [selectedStadium, setSelectedStadium] = useState<string | null>(null);
+  const [shared, setShared] = useState(false);
 
   useEffect(() => {
     const fetchMemes = async () => {
@@ -164,6 +166,20 @@ export default function CabalaDashboard() {
     });
   };
 
+  const shareCabala = async () => {
+    const url = 'https://cabala-dashboard.vercel.app';
+    const data = { title: 'Cábala', text: 'Cábala — el dashboard del Mundial 2026', url };
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try { await navigator.share(data); } catch { /* el usuario canceló */ }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        setShared(true);
+        setTimeout(() => setShared(false), 2000);
+      } catch { /* sin permiso de clipboard */ }
+    }
+  };
+
   const visibleTeams = tribe.size ? teams.filter(t => tribe.has(t.code)) : teams;
   const sortedTeams = [...visibleTeams].sort((a, b) => b.sentiment - a.sentiment);
   const visibleSuf = tribe.size ? SUF.filter(s => tribe.has(s.code)) : SUF;
@@ -199,6 +215,7 @@ export default function CabalaDashboard() {
             <p className="mt-1 text-sm text-stone-500">la superstición se hizo software</p>
           </div>
           <div className="flex flex-col items-start gap-2 sm:items-end">
+            <button onClick={shareCabala} className="inline-flex items-center gap-1.5 rounded-md border border-stone-200 px-2.5 py-1 text-xs text-stone-600 transition-colors hover:border-orange-300 hover:text-orange-900"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>{shared ? 'copiado' : 'compartir'}</button>
             <div className="font-mono text-xs text-stone-500">día 12 · jue 25 jun · 18:42 ART</div>
             <div className="flex items-center gap-2.5 rounded-md bg-stone-100 px-3 py-1.5">
               <span className="text-[10px] uppercase tracking-wider text-stone-500">pulso global</span>
@@ -380,6 +397,16 @@ export default function CabalaDashboard() {
               <span className="text-[10px] text-stone-400">agrupado por día</span>
             </div>
             <Calendar />
+          </section>
+        )}
+
+        {activeMods.has('gifs') && (
+          <section className="mt-3">
+            <div className="mb-1.5 flex items-baseline justify-between">
+              <h2 className="text-xs font-medium tracking-wide text-stone-700">gifs del mundial</h2>
+              <span className="text-[10px] text-stone-400">tu tribu en movimiento</span>
+            </div>
+            <GifWall tribe={tribeArray} />
           </section>
         )}
 
