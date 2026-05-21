@@ -31,7 +31,8 @@ interface VideoItem {
 }
 
 const cache = new Map<string, { data: VideoItem[]; cachedAt: number }>();
-const CACHE_TTL = 30 * 60 * 1000;
+const CACHE_TTL = 6 * 60 * 60 * 1000;     // 6h para resultados con videos (search.list cuesta 100u; cuota diaria 10k)
+const EMPTY_CACHE_TTL = 10 * 60 * 1000;   // 10min para vacíos: reintenta pronto sin martillar la api
 
 const QUERIES = [
   'rumbo al mundial 2026 vlog',
@@ -187,10 +188,15 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const forceRefresh = url.searchParams.get('refresh') === 'true';
 
-  const cacheKey = 'all';
-  const cached = cache.get(cacheKey);
-  if (!forceRefresh && cached && Date.now() - cached.cachedAt < CACHE_TTL) {
-    return NextResponse.json({ items: cached.data, updatedAt: cached.cachedAt, cached: true });
+const cacheKey = 'all';
+const cached = cache.get(cacheKey);
+ if (!forceRefresh && cached) {
+   // un resultado con videos vale 6h; uno vacío (cuota agotada o fallo) caduca a los 10min
+   // para reintentar pronto en vez de servir un vacío pegado
+   const ttl = cached.data.length > 0 ? CACHE_TTL : EMPTY_CACHE_TTL;
+   if (Date.now() - cached.cachedAt < ttl) {
+     return NextResponse.json({ items: cached.data, updatedAt: cached.cachedAt, cached: true });
+    }
   }
 
   const apiKey = process.env.YOUTUBE_API_KEY;
