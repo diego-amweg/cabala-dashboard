@@ -21,6 +21,12 @@ interface RoadData {
   error?: string;
 }
 
+interface BtsVideo {
+  id: string;
+  title: string;
+  blurb: string;
+}
+
 interface RoadToWorldCupProps {
   tribe: string[];
 }
@@ -55,6 +61,18 @@ const TEAM_HERO_DATA: Record<string, HeroData> = {
   FRA: { titles: 2, bestPerf: 'campeón 1998, 2018', dt: 'Didier Deschamps' },
   ESP: { titles: 1, bestPerf: 'campeón 2010', dt: 'Luis de la Fuente' },
   JPN: { titles: 0, bestPerf: 'octavos 2002, 2010, 2018, 2022', dt: 'Hajime Moriyasu' },
+};
+
+// BTS histórico: curaduría hardcodeada de videos oficiales de YouTube por selección.
+// Piloto: solo Argentina cargada. Los IDs son los de la URL de YouTube (ver instrucciones del sprint 4d-3e).
+// Para sumar otra selección, agregá una entrada con su código (ej. BRA: [...]).
+const TEAM_BTS_VIDEOS: Record<string, BtsVideo[]> = {
+  ARG: [
+    { id: 'MCWJNOfJoSM', title: 'la tercera estrella', blurb: 'la noche que esperamos 36 años: campeones en Qatar, en penales, ante Francia.' },
+    { id: 'NRG6RNaKlWo', title: 'el Maracanazo de Messi', blurb: 'Copa América 2021: el primer título con la mayor, después de 28 años de sequía.' },
+    { id: '4-7Ic5nzlW8', title: 'la vuelta a casa', blurb: 'millones en la calle para recibir a los campeones. el país entero, parado.' },
+    { id: 'P_9nUzsB7jU', title: 'bicampeones de América', blurb: 'Copa América 2024: la confirmación de que esto no fue casualidad.' },
+  ],
 };
 
 const TAG_COLORS: Record<string, { bg: string; fg: string }> = {
@@ -148,6 +166,7 @@ export default function RoadToWorldCup({ tribe }: RoadToWorldCupProps) {
   }
 
   const heroData = activeTeam ? TEAM_HERO_DATA[activeTeam] : undefined;
+  const btsVideos = activeTeam ? TEAM_BTS_VIDEOS[activeTeam] ?? [] : [];
 
   return (
     <div className="rounded-xl border border-stone-200 bg-white p-4">
@@ -227,6 +246,30 @@ export default function RoadToWorldCup({ tribe }: RoadToWorldCupProps) {
           <div className="mt-4 border-t border-stone-100 pt-3 text-xs italic leading-relaxed text-stone-500">
             {road.outlook}
           </div>
+
+          {btsVideos.length > 0 && (
+            <div className="mt-4 border-t border-stone-100 pt-3">
+              <h4 className="mb-2 text-[10px] font-medium uppercase tracking-wider text-stone-500">el camino en video</h4>
+              <div className="grid grid-cols-2 gap-2">
+                {btsVideos.map(v => (
+                  <a key={v.id + v.title} href={`https://www.youtube.com/watch?v=${v.id}`} target="_blank" rel="noopener noreferrer" className="group block overflow-hidden rounded-md border border-stone-100 transition-colors hover:bg-stone-50">
+                    <div className="relative aspect-video w-full overflow-hidden bg-stone-100">
+                      <img src={`https://img.youtube.com/vi/${v.id}/hqdefault.jpg`} alt={v.title} loading="lazy" className="h-full w-full object-cover" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black/60 transition-colors group-hover:bg-black/75">
+                          <svg viewBox="0 0 24 24" className="ml-0.5 h-4 w-4 fill-white"><path d="M8 5v14l11-7z" /></svg>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-2">
+                      <div className="text-[11px] font-medium leading-tight text-stone-900">{v.title}</div>
+                      <p className="mt-0.5 text-[10px] leading-relaxed text-stone-500">{v.blurb}</p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
 
           {road.cached && (
             <div className="mt-2 text-right text-[9px] text-stone-400">cacheado · refresca en 24h</div>
