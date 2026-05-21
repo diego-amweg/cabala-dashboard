@@ -183,7 +183,7 @@ export default function CabalaDashboard() {
   let memesMeta;
   if (memesLoading) memesMeta = 'cargando...';
   else if (memesError) memesMeta = 'bluesky no respondió';
-  else memesMeta = 'desde bluesky · clasificado por claude';
+  else memesMeta = 'desde bluesky · clasificado';
 
   const tribeArray = Array.from(tribe);
   const heartDuration = (180 - pulse) / 60;
@@ -387,7 +387,7 @@ export default function CabalaDashboard() {
           <section className="mt-3">
             <div className="mb-1.5 flex items-baseline justify-between">
               <h2 className="text-xs font-medium tracking-wide text-stone-700">camino al mundial</h2>
-              <span className="text-[10px] text-stone-400">narrativa por selección · generada por claude</span>
+              <span className="text-[10px] text-stone-400">narrativa por selección</span>
             </div>
             <RoadToWorldCup tribe={tribeArray} />
           </section>
@@ -397,14 +397,14 @@ export default function CabalaDashboard() {
           <section className="mt-3">
             <div className="mb-1.5 flex items-baseline justify-between">
               <h2 className="text-xs font-medium tracking-wide text-stone-700">inmersivo</h2>
-              <span className="text-[10px] text-stone-400">cómo vivir el partido · recomendado por claude</span>
+              <span className="text-[10px] text-stone-400">cómo vivir el partido</span>
             </div>
             <ImmersiveLayer match={CURRENT_MATCH} />
           </section>
         )}
 
         <footer className="mt-12 border-t border-stone-200 pt-4 text-center text-[10px] text-stone-400">
-          Cábala v1.5 · sprint 4d-3c · construido por Diego con asistencia de Claude
+          Cábala · construido por Diego
         </footer>
       </div>
       <Chat context={{ memes, tribe: tribeArray, activeMods: Array.from(activeMods) }} />
