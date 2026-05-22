@@ -207,17 +207,21 @@ export async function GET() {
     return NextResponse.json({ items: [], updatedAt: Date.now(), debug: [{ step: 'auth', error: authError }] });
   }
 
-  const queries = ['mundial 2026', 'world cup 2026', 'fifa worldcup'];
+  // texto + hashtags reales del mundial. los hashtags capturan posts tageados que las
+  // queries de texto sueltas no agarran. ojo: en bluesky el volumen es menor que en x;
+  // el array debug de la respuesta muestra el count de cada query para ver cuál rinde.
+  const queries = ['mundial 2026', 'world cup 2026', 'fifa worldcup', '#Mundial2026', '#WorldCup2026', '#Somos26'];
   const all: FeedItem[] = [];
   const debug: Array<{ step: string; query?: string; status?: number | string; count?: number; error?: string }> = [
     { step: 'auth', status: 200 },
   ];
 
-  for (const q of queries) {
-    const result = await searchQuery(q, jwt);
-    debug.push({ step: 'search', query: q, status: result.status, count: result.items.length, error: result.error });
+  // en paralelo para que sumar queries no alargue la latencia del módulo
+  const results = await Promise.all(queries.map(q => searchQuery(q, jwt)));
+  results.forEach((result, i) => {
+    debug.push({ step: 'search', query: queries[i], status: result.status, count: result.items.length, error: result.error });
     all.push(...result.items);
-  }
+  });
 
   const seen = new Set<string>();
   const unique = all.filter(item => {
