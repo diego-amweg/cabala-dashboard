@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cacheGet, cacheSet } from '@/lib/cache';
 
 interface YouTubeSearchItem {
   id: { videoId: string };
@@ -30,9 +31,10 @@ interface VideoItem {
   keepReason?: string;
 }
 
-const cache = new Map<string, { data: VideoItem[]; cachedAt: number }>();
-const CACHE_TTL = 6 * 60 * 60 * 1000;     // 6h para resultados con videos (search.list cuesta 100u; cuota diaria 10k)
-const EMPTY_CACHE_TTL = 10 * 60 * 1000;   // 10min para vacíos: reintenta pronto sin martillar la api
+// cache en upstash redis: persiste entre cold starts de vercel. ttl en segundos.
+const CACHE_TTL = 6 * 60 * 60;     // 6h para resultados con videos (search.list cuesta 100u; cuota diaria 10k)
+const EMPTY_CACHE_TTL = 10 * 60;   // 10min para vacíos: reintenta pronto sin martillar la api
+const CACHE_KEY = 'journey:all';
 
 const QUERIES = [
   'rumbo al mundial 2026 vlog',
@@ -188,14 +190,11 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const forceRefresh = url.searchParams.get('refresh') === 'true';
 
-const cacheKey = 'all';
-const cached = cache.get(cacheKey);
- if (!forceRefresh && cached) {
-   // un resultado con videos vale 6h; uno vacío (cuota agotada o fallo) caduca a los 10min
-   // para reintentar pronto en vez de servir un vacío pegado
-   const ttl = cached.data.length > 0 ? CACHE_TTL : EMPTY_CACHE_TTL;
-   if (Date.now() - cached.cachedAt < ttl) {
-     return NextResponse.json({ items: cached.data, updatedAt: cached.cachedAt, cached: true });
+if (!forceRefresh) {
+    // redis ya expira por ttl (6h llenos / 10min vacíos): si la clave existe, es válida
+    const cached = await cacheGet<{ data: VideoItem[]; cachedAt: number }>(CACHE_KEY);
+    if (cached) {
+      return NextResponse.json({ items: cached.data, updatedAt: cached.cachedAt, cached: true });
     }
   }
 
@@ -256,7 +255,8 @@ const cached = cache.get(cacheKey);
 
   filtered.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
   const top = filtered.slice(0, 12);
-  cache.set(cacheKey, { data: top, cachedAt: Date.now() });
+  const ttl = top.length > 0 ? CACHE_TTL : EMPTY_CACHE_TTL;
+  await cacheSet(CACHE_KEY, { data: top, cachedAt: Date.now() }, ttl);
 
   return NextResponse.json({
     items: top,
