@@ -42,7 +42,7 @@ interface FeedItem {
 
 // el token de bluesky se cachea en redis (persiste entre cold starts). el enhancementCache
 // queda en memoria a propósito: son muchas claves por url y el costo en redis no rinde.
-const enhancementCache = new Map<string, { tag: Tag; text: string; relevance: number }>();
+const enhancementCache = new Map<string, { keep: boolean; tag: Tag; text: string; relevance: number }>();
 
 async function getJWT(): Promise<{ jwt: string | null; error?: string }> {
   const cached = await cacheGet<string>('bluesky:jwt');
@@ -130,75 +130,87 @@ async function enhanceWithClaude(posts: FeedItem[]): Promise<{ enhanced: FeedIte
   if (posts.length === 0) return { enhanced: posts, status: 'no posts' };
 
   const toProcess = posts.filter(p => !enhancementCache.has(p.url));
-  if (toProcess.length === 0) {
-    const enhanced = posts.map(p => {
-      const cached = enhancementCache.get(p.url);
-      return cached ? { ...p, ...cached, originalText: p.text, text: cached.text } : p;
-    });
-    return { enhanced, status: 'all cached' };
-  }
 
-  const prompt = `Sos un asistente que clasifica y traduce posts de redes sociales sobre el Mundial de Fútbol 2026 para una plataforma argentina.
+  if (toProcess.length > 0) {
+    const prompt = `Sos un editor que filtra, clasifica y traduce posts sobre el Mundial de Fútbol 2026 para Cábala, una plataforma argentina para vivirlo con pasión futbolera.
+
+OBJETIVO: dejar pasar SOLO contenido del Mundial como FÚTBOL y FIESTA — memes, polémicas deportivas, peleas de hinchas, virales emocionales y noticias concretas del torneo.
 
 Posts:
 ${toProcess.map((p, i) => `[${i}] ${p.text.slice(0, 400)}`).join('\n\n')}
 
-Devolvé un array JSON (sin texto adicional, sin markdown) con un objeto por post en el mismo orden, con esta estructura:
-{ "i": <índice>, "tag": "meme"|"polémica"|"pelea"|"viral"|"noticia", "es": "<traducción al español rioplatense, máximo 280 caracteres>", "rel": <0-100> }
+Devolvé un array JSON (sin texto adicional, sin markdown), un objeto por post en el mismo orden:
+{ "i": <índice>, "keep": true|false, "tag": "meme"|"polémica"|"pelea"|"viral"|"noticia", "es": "<traducción al español rioplatense, máximo 280 caracteres>", "rel": <0-100> }
+
+DEJAR PASAR (keep: true) con su tag:
+- "meme": humor, chistes, parodias, ironía sobre el fútbol del Mundial
+- "polémica": SOLO polémica DEPORTIVA — árbitros, VAR, decisiones de juego, quejas futbolísticas
+- "pelea": cruces entre hinchas o cuentas, peleas en redes por fútbol
+- "viral": contenido masivo de impacto emocional futbolístico (festejos, hinchadas, momentos)
+- "noticia": información concreta del torneo (plantel, fixture, sedes, fechas)
+
+RECHAZAR (keep: false):
+- Política y activismo: protestas, inmigración, ICE, crítica al país anfitrión, "el mundial no debería venir", geopolítica, derechos civiles
+- Crítica institucional o política a la FIFA (corrupción, negocios, gobernanza, derechos humanos). OJO: las quejas DEPORTIVAS por arbitraje, VAR o decisiones de juego SÍ van, como "polémica"
+- Posts vacíos, sin sustancia, que no dicen nada concreto
+- Contenido no futbolístico, o que usa el hashtag del Mundial solo de relleno
+- Promoción, venta de entradas, sorteos, spam
+- Idiomas que no sean español, inglés ni portugués
 
 Reglas:
-- "meme": humor, chistes, parodias, ironía
-- "polémica": árbitros, VAR, decisiones controvertidas, quejas
-- "pelea": conflictos entre fanáticos o cuentas, peleas en redes
-- "viral": contenido masivo de impacto emocional pero no humorístico
-- "noticia": información concreta, anuncios, datos
-- "rel": qué tan relevante es para vivir el Mundial intensamente (0=irrelevante, 100=imperdible)
-- Si el post ya está en español, copialo en "es" igual o ligeramente acomodado
-- Acortá si hace falta para que entre en 280 caracteres`;
+- Si keep es false, igual completá tag/es/rel con cualquier valor: se descartan después
+- "rel": qué tan imperdible es para vivir el Mundial con pasión (0-100)
+- Si el post ya está en español, copialo en "es" igual o ligeramente acomodado, máximo 280 caracteres`;
 
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'content-type': 'application/json',
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 4000,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': apiKey,
+          'content-type': 'application/json',
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 4000,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      });
 
-    if (!res.ok) {
-      const errText = await res.text();
-      return { enhanced: posts, status: `claude HTTP ${res.status}: ${errText.slice(0, 100)}` };
-    }
-
-    const data = await res.json();
-    const text = data.content[0].text.trim();
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) return { enhanced: posts, status: 'no json in response' };
-
-    const enhancements: Array<{ i: number; tag: Tag; es: string; rel: number }> = JSON.parse(jsonMatch[0]);
-
-    enhancements.forEach(e => {
-      const post = toProcess[e.i];
-      if (post) {
-        enhancementCache.set(post.url, { tag: e.tag, text: e.es, relevance: e.rel });
+      if (!res.ok) {
+        const errText = await res.text();
+        return { enhanced: posts, status: `claude HTTP ${res.status}: ${errText.slice(0, 100)}` };
       }
-    });
 
-    const enhanced = posts.map(p => {
-      const cached = enhancementCache.get(p.url);
-      return cached ? { ...p, tag: cached.tag, originalText: p.text, text: cached.text, relevance: cached.relevance } : p;
-    });
+      const data = await res.json();
+      const text = data.content[0].text.trim();
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) return { enhanced: posts, status: 'no json in response' };
 
-    return { enhanced, status: `enhanced ${toProcess.length} new, ${posts.length - toProcess.length} cached` };
-  } catch (e) {
-    return { enhanced: posts, status: e instanceof Error ? e.message : 'unknown' };
+      const enhancements: Array<{ i: number; keep: boolean; tag: Tag; es: string; rel: number }> = JSON.parse(jsonMatch[0]);
+      enhancements.forEach(e => {
+        const post = toProcess[e.i];
+        if (post) {
+          enhancementCache.set(post.url, { keep: !!e.keep, tag: e.tag, text: e.es, relevance: e.rel });
+        }
+      });
+    } catch (e) {
+      return { enhanced: posts, status: e instanceof Error ? e.message : 'unknown' };
+    }
   }
+
+  // armamos el resultado desde el cache, descartando los keep:false
+  const enhanced: FeedItem[] = [];
+  let kept = 0, rejected = 0;
+  for (const p of posts) {
+    const c = enhancementCache.get(p.url);
+    if (!c) { enhanced.push(p); continue; }   // si no se pudo clasificar, lo dejamos por las dudas
+    if (!c.keep) { rejected++; continue; }
+    kept++;
+    enhanced.push({ ...p, tag: c.tag, originalText: p.text, text: c.text, relevance: c.relevance });
+  }
+
+  return { enhanced, status: `kept ${kept}, rejected ${rejected}` };
 }
 
 export async function GET() {
@@ -230,12 +242,14 @@ export async function GET() {
     return true;
   });
 
-  const top = unique.sort((a, b) => b.score - a.score).slice(0, 12);
+  // clasificamos un pool más grande (25): el filtro va a descartar varios (política, ruido),
+  // y queremos que igual queden ~12 buenos
+  const candidates = unique.sort((a, b) => b.score - a.score).slice(0, 25);
 
-  const { enhanced, status: enhanceStatus } = await enhanceWithClaude(top);
+  const { enhanced, status: enhanceStatus } = await enhanceWithClaude(candidates);
   debug.push({ step: 'enhance', status: enhanceStatus });
 
-  enhanced.sort((a, b) => (b.relevance ?? 0) - (a.relevance ?? 0));
+  const top = enhanced.sort((a, b) => (b.relevance ?? 0) - (a.relevance ?? 0)).slice(0, 12);
 
-  return NextResponse.json({ items: enhanced, updatedAt: Date.now(), debug });
+  return NextResponse.json({ items: top, updatedAt: Date.now(), debug });
 }
