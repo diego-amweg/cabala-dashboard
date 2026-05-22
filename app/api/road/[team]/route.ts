@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cacheGet, cacheSet } from '@/lib/cache';
 
 interface RoadMoment {
   date: string;
@@ -16,8 +17,8 @@ interface RoadToWorldCup {
   outlook: string;
 }
 
-const cache = new Map<string, { data: RoadToWorldCup; cachedAt: number }>();
-const CACHE_TTL = 24 * 60 * 60 * 1000;
+// cache en upstash redis: persiste entre cold starts de vercel. ttl en segundos.
+const CACHE_TTL = 24 * 60 * 60;
 
 const TEAM_NAMES: Record<string, string> = {
   ARG: 'Argentina',
@@ -61,9 +62,12 @@ export async function GET(
   const url = new URL(req.url);
   const forceRefresh = url.searchParams.get('refresh') === 'true';
 
-  const cached = cache.get(teamCode);
-  if (!forceRefresh && cached && Date.now() - cached.cachedAt < CACHE_TTL) {
-    return NextResponse.json({ ...cached.data, cached: true });
+  if (!forceRefresh) {
+    // redis ya expira por ttl (24h): si la clave existe, es válida
+    const cached = await cacheGet<RoadToWorldCup>(`road:${teamCode}`);
+    if (cached) {
+      return NextResponse.json({ ...cached, cached: true });
+    }
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -145,7 +149,7 @@ Reglas estrictas:
       return NextResponse.json({ error: 'json invalido', preview: jsonMatch[0].slice(0, 200) });
     }
 
-    cache.set(teamCode, { data: road, cachedAt: Date.now() });
+    await cacheSet(`road:${teamCode}`, road, CACHE_TTL);
 
     return NextResponse.json({ ...road, cached: false });
   } catch (e) {

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cacheGet, cacheSet } from '@/lib/cache';
 
 interface BlueskyEmbedImages {
   $type: 'app.bsky.embed.images#view';
@@ -39,11 +40,13 @@ interface FeedItem {
   imageUrl?: string;
 }
 
-let cachedJwt: { jwt: string; expiresAt: number } | null = null;
+// el token de bluesky se cachea en redis (persiste entre cold starts). el enhancementCache
+// queda en memoria a propósito: son muchas claves por url y el costo en redis no rinde.
 const enhancementCache = new Map<string, { tag: Tag; text: string; relevance: number }>();
 
 async function getJWT(): Promise<{ jwt: string | null; error?: string }> {
-  if (cachedJwt && cachedJwt.expiresAt > Date.now()) return { jwt: cachedJwt.jwt };
+  const cached = await cacheGet<string>('bluesky:jwt');
+  if (cached) return { jwt: cached };
 
   const handle = process.env.BLUESKY_HANDLE;
   const password = process.env.BLUESKY_APP_PASSWORD;
@@ -61,8 +64,9 @@ async function getJWT(): Promise<{ jwt: string | null; error?: string }> {
     const data = await res.json();
     if (!data.accessJwt) return { jwt: null, error: 'response sin accessJwt' };
 
-    cachedJwt = { jwt: data.accessJwt, expiresAt: Date.now() + 14 * 60 * 1000 };
-    return { jwt: cachedJwt.jwt };
+    // ttl 13 min, un poco menos que la expiración real del token para tener margen
+    await cacheSet('bluesky:jwt', data.accessJwt, 13 * 60);
+    return { jwt: data.accessJwt };
   } catch (e) {
     return { jwt: null, error: e instanceof Error ? e.message : 'unknown' };
   }
