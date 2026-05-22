@@ -44,6 +44,11 @@ interface FeedItem {
 // queda en memoria a propósito: son muchas claves por url y el costo en redis no rinde.
 const enhancementCache = new Map<string, { keep: boolean; tag: Tag; text: string; relevance: number }>();
 
+// el feed armado (top final) se cachea en redis con ttl corto: evita rebuscar y
+// reclasificar con haiku en cada visita. la carga en frío era ~10s.
+const FEED_CACHE_KEY = 'bluesky:feed';
+const FEED_CACHE_TTL = 15 * 60; // 15 min en segundos
+
 async function getJWT(): Promise<{ jwt: string | null; error?: string }> {
   const cached = await cacheGet<string>('bluesky:jwt');
   if (cached) return { jwt: cached };
@@ -213,7 +218,17 @@ Reglas:
   return { enhanced, status: `kept ${kept}, rejected ${rejected}` };
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const forceRefresh = new URL(req.url).searchParams.get('refresh') === 'true';
+
+  if (!forceRefresh) {
+    // redis ya expira por ttl (15 min): si la clave existe, es válida
+    const cachedFeed = await cacheGet<{ items: FeedItem[]; updatedAt: number }>(FEED_CACHE_KEY);
+    if (cachedFeed) {
+      return NextResponse.json({ items: cachedFeed.items, updatedAt: cachedFeed.updatedAt, cached: true });
+    }
+  }
+
   const { jwt, error: authError } = await getJWT();
   if (!jwt) {
     return NextResponse.json({ items: [], updatedAt: Date.now(), debug: [{ step: 'auth', error: authError }] });
@@ -250,6 +265,11 @@ export async function GET() {
   debug.push({ step: 'enhance', status: enhanceStatus });
 
   const top = enhanced.sort((a, b) => (b.relevance ?? 0) - (a.relevance ?? 0)).slice(0, 12);
+
+  // cacheamos el feed armado solo si hay resultados (no cachear vacíos)
+  if (top.length > 0) {
+    await cacheSet(FEED_CACHE_KEY, { items: top, updatedAt: Date.now() }, FEED_CACHE_TTL);
+  }
 
   return NextResponse.json({ items: top, updatedAt: Date.now(), debug });
 }
