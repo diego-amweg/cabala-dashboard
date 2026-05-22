@@ -70,7 +70,7 @@ export default function GifWall({ tribe }: { tribe: string[] }) {
   return (
     <div className="rounded-xl border border-stone-200 bg-white p-3">
       {content}
-      <div className="mt-2 flex justify-end px-1"><span className="text-[9px] uppercase tracking-wider text-stone-400">Powered by GIPHY</span></div>
+      <div className="mt-2 flex items-center justify-end gap-1.5 px-1"><span className="text-[10px] text-stone-400">powered by</span>{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/giphy-logo.svg" alt="GIPHY" className="h-3 w-auto" /></div>
     </div>
   );
 }
