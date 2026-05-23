@@ -234,6 +234,19 @@ consecuencias: el calendario muestra los 72 partidos reales de grupos con equipo
 y horario local. pendiente: posiciones (GroupStage), resultados en vivo y bracket. también
 se formalizó la convención de autodiagnóstico en endpoints (CLAUDE.md): nunca fallar en
 silencio, devolver el motivo en el body.
+37. — grupos reales del mundial (standings derivado de los partidos)
+contexto: el GroupStage mostraba "por definir". football-data tiene endpoint /standings, pero
+la doc avisa que devuelve 404 para competiciones tipo CUP (el mundial podría serlo), así que
+depender de él era arriesgado.
+decisión: derivar las 12 tablas de los partidos (mismo /v4/competitions/WC/matches que el
+calendario, filtrado GROUP_STAGE): los equipos salen de los partidos (disponibles hoy por el
+sorteo) y los puntos se calculan sumando los finalizados (cero hoy, se llena solo durante el
+torneo). endpoint nuevo /api/standings, cache redis 1h, autodiagnóstico. el mapa de nombres
+EN→ES se extrajo a lib/teams.ts (lo usa standings; el calendario sigue con su copia local,
+deuda menor de unificar). desempate: puntos → diferencia de gol → goles a favor → alfabético
+(aproximación, no el desempate oficial FIFA con head-to-head).
+consecuencias: los 12 grupos muestran los 48 equipos reales con PJ/Pts; durante el mundial las
+posiciones se actualizan solas. pendiente de sprint 5: resultados en vivo y bracket.
 
 ## Cronograma realizado
 
