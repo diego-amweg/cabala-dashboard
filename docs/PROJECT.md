@@ -162,6 +162,78 @@ Estados: `pendiente` → `diseñado` → `vivo (mock)` → `vivo (real)`
 26. **Sprint 4d-3c.1: controles manuales del ticker** (mejora de 4d-3c). El ticker pasa de animación CSS pura a JavaScript con `requestAnimationFrame`, encapsulado en un componente nuevo `components/Ticker.tsx`. Se agregan: pause-on-hover (mantenido), drag con dedo en mobile (toca y arrastra, vuelve a auto-play al soltar), flechas izquierda/derecha del teclado en desktop (cuando el ticker tiene focus, mueve 80px por toque). Decisión: no agregar botones visibles ni atajo de space para mantener el módulo como elemento de fondo, no protagonista. Performance: sigue siendo GPU-accelerated porque solo se modifica `transform`.
 27. **Descartar Claude Code como ejecutor técnico** (Sesión 2, mayo 2026). Decidimos dejar de usar Claude Code en WSL para aplicar cambios y volver a un workflow donde Diego aplica todo manualmente en VS Code local. Razón: control directo sobre cada cambio antes de aplicarlo, menor riesgo de errores silenciosos cuando find/replace falla en strings largos, y mayor entendimiento del estado del repo por parte de Diego. Trade-off aceptado: cambios más lentos de aplicar, pero más confiables. Claude (este chat) ahora entrega: búsqueda/reemplazo surgical, archivos completos cuando el delta es grande, scripts de bash cuando hay varias acciones encadenadas, y bloques de texto para pegar en docs.
 28. **Agrupación por accesibilidad + covers visuales en Capa AR/VR** (Sprint 4d-3d, mayo 2026): el módulo "inmersivo" pasa de grilla plana de 8 opciones a dos grupos visuales con cover image por card. Grupos: "desde tu casa hoy" (4 opciones accesibles sin hardware especial: watch party presencial, FIFA+, Twitch co-streams, YouTube VR con Cardboard) y "con equipo dedicado" (2 opciones que requieren hardware: Bigscreen, Apple Vision Pro). Catálogo pasa de 8 a 6 opciones al sacar Cosm Domes (presencial en LA/Dallas, no aplicable a un usuario en Tostado) y Meta Horizon Worlds (redundante funcionalmente con Bigscreen). Covers son imágenes locales en `public/immersive/{id}.jpg` a 640x360, renderizadas con `next/image` (optimización automática, lazy load). Cada card mantiene su categoría (streaming/social/vr/xr/dome), descripción, dispositivo y costo. Tradeoff: el módulo pasa de tabla informativa densa a tarjetas editoriales con foto — más superficie visual, menos densidad de texto. Enmienda al ADR 15.
+29. **BTS histórico en Camino al Mundial: "el camino en video"** (Sprint 4d-3e): se agrega al módulo road una sección al pie con videos BTS históricos de YouTube oficiales por selección. Enfoque: curaduría hardcodeada en el componente (objeto `TEAM_BTS_VIDEOS` con id de YouTube, título y bajada editorial por video), renderizada como thumbnail (`img.youtube.com/vi/{id}/hqdefault.jpg`) + link que abre el video en YouTube, no embed. Alternativas descartadas: la YouTube Data API (lo dinámico queda reservado para el Sprint 8 de BTS live; el contenido histórico es estático) y los embeds (pesados, peor performance y privacidad). Sin endpoint nuevo, sin key, sin LLM en runtime: la curaduría humana es el filtro editorial. Los IDs los consigue Diego (Claude no puede proveer IDs de YouTube de forma confiable). Piloto deployado solo con Argentina (4 videos: final Qatar 2022, Copa América 2021, vuelta a casa, Copa América 2024). Escalado al resto de selecciones pendiente de decisión.
+30. **Modelo del endpoint road: Sonnet a Haiku** (Sprint 4d-3e): `/api/road/[team]` pasa de `claude-sonnet-4-6` a `claude-haiku-4-5-20251001` para bajar costo y latencia (Sonnet tardaba ~22s por generación). El road solo narra un timeline a partir de los datos provistos en `TEAM_FACTS`, tarea que Haiku resuelve bien; validado regenerando ARG/BRA/JPN con `?refresh=true`. Tradeoff: Haiku es menos potente; si en algún equipo la calidad cae, se ajusta el prompt o se revierte el modelo solo para road. Disparador: la cuenta de Anthropic API se quedó sin créditos, lo que expuso la dependencia del dashboard del saldo de API.
+31. — módulo de gifs del mundial (giphy, vivo, por tribu)
+contexto: se buscaba contenido animado simpático para el dashboard. tenor quedó
+descartado porque google no acepta nuevos clientes de su api desde enero 2026.
+giphy sigue abierto: clave beta gratis, 100 búsquedas/hora, atribución obligatoria.
+decisión: módulo nuevo "gifs del mundial" con toggle propio, debajo de calendario.
+contenido vivo (giphy en runtime), queries ligadas a las selecciones de la tribu
+(una por selección), cache por selección (no por tribu) con ttl 6h para no pasar el
+límite. ~20 gifs en tira horizontal, mp4 (no .gif) con carga por viewport. gifs no
+clickeables (no se manda gente afuera).
+consecuencias: la calidad la decide el ranking de giphy (no se puede filtrar por llm
+porque no "ve" el gif); aceptado, con plan de caer a curaduría hardcodeada si se ve
+barato. la atribución hoy es texto; para el público hay que poner el logo oficial.
+32. — botón "compartir cábala" global
+contexto: se quería que el contenido simpático empuje a compartir cábala. se evaluó
+ponerlo en el módulo de gifs pero se elevó a nivel dashboard.
+decisión: botón "compartir" en el header. web share api (en celular, menú nativo con
+texto "cábala — el dashboard del mundial 2026" + url); en desktop copia el link con
+feedback "copiado". se comparte cábala, no el gif.
+consecuencias: ninguna negativa. única superficie de difusión por ahora.
+33. — cache diferenciado en journey para respetar la cuota de youtube
+contexto: "viaje del hincha" dejó de traer videos. el endpoint hacía 4 búsquedas
+(search.list = 100 unidades c/u) con cache de 30 min: ~19.200 unidades/día contra una
+cuota gratis de 10.000/día. se agotaba todas las tardes (403 quotaexceeded) y encima
+cacheaba los vacíos.
+decisión: ttl 6h para resultados con videos, 10 min para vacíos (reintenta sin
+martillar). consumo baja a ~1.600 unidades/día.
+consecuencias: el cache sigue en memoria, se pierde en cold starts de vercel; la
+solución de fondo es vercel kv (backlog). no fue causado por 4d-4a.
+34. — cache persistente en Upstash Redis
+contexto: los caches en memoria (Map a nivel módulo) se pierden en cada cold start de
+vercel, lo que re-dispara búsquedas y llamadas a apis (cuota de youtube, saldo de
+anthropic) y empeora la latencia. vercel kv dejó de existir: se migró a upstash redis
+vía marketplace en diciembre 2024.
+decisión: se creó una base upstash redis (free: 1 db, 500k comandos/mes) vinculada al
+proyecto, que inyecta sus credenciales como env vars. helper lib/cache.ts con
+cacheGet/cacheSet y degradación a "sin cache" si falta config o si redis falla.
+migrados: journey (6h/10min), road (24h por selección), token de sesión de bluesky
+(13min). NO migrados a propósito: gifs (giphy es barato y tolera cold starts) y el
+enhancementCache de bluesky (una clave por url, no rinde en redis).
+consecuencias: los cold starts ya no re-queman cuota ni saldo en esos endpoints y baja
+la latencia. contra: nueva dependencia de infra (upstash) y otro free tier que vigilar.
+35. — hashtags reales + filtro keep/reject en el feed de bluesky
+contexto: el módulo "memes y polémicas" buscaba solo 3 frases de texto. se sumaron
+hashtags reales (#Mundial2026, #WorldCup2026, #Somos26) como queries para ampliar el
+pool — los tres traen volumen full en bluesky. eso destapó que el filtro de haiku solo
+clasificaba, no descartaba: entraba mucho contenido político/activista (protestas, ICE,
+crítica institucional a FIFA) ajeno a la pasión futbolera del módulo.
+decisión: (1) hashtags reales como queries, búsquedas en paralelo (Promise.all). (2)
+filtro keep/reject en haiku, como el de journey: deja solo fútbol y fiesta (memes,
+polémica DEPORTIVA, peleas de hinchas, virales, noticias), rechaza política, activismo,
+crítica institucional a FIFA, ruido, spam e idiomas que no sean es/en/pt. se clasifica
+un pool de 25 (antes 12) para que tras descartar queden ~12 buenos.
+consecuencias: el feed quedó mucho más alineado con la voz de cábala. contra: clasificar
+25 por carga sube el uso de haiku y el feed no se cachea, así que la carga en frío llega
+a ~10s. pendiente: cachear el feed armado en redis (ttl corto).
+36. — calendario real del mundial vía football-data.org (no API-Football)
+contexto: sprint 5 arrancó con API-Football, pero su plan gratis NO da acceso a la
+temporada 2026 (solo 2022-2024); el error recién apareció gracias al autodiagnóstico del
+endpoint. se evaluó pagar, pero para un proyecto sin monetización no se justifica.
+decisión: usar football-data.org, cuyo free tier incluye el mundial ("WC", competición
+2000) para siempre y con límite holgado (~10 req/min vs 100/día de API-Football). endpoint
+/api/fixtures: GET a /v4/competitions/WC/matches?season=2026 con header X-Auth-Token,
+filtra stage=GROUP_STAGE, mapea al FixtureItem del Calendar, traduce nombres EN→ES con
+mapa fijo + fallback, convierte a hora argentina (utc-3 fijo), cachea en redis
+(fixtures:groups, ttl 1h) y soporta ?refresh=true. el Calendar pasó de hardcodeado a fetch.
+football-data no da estadio, pero sí el grupo (A-L), que se muestra como fase.
+consecuencias: el calendario muestra los 72 partidos reales de grupos con equipos, fechas
+y horario local. pendiente: posiciones (GroupStage), resultados en vivo y bracket. también
+se formalizó la convención de autodiagnóstico en endpoints (CLAUDE.md): nunca fallar en
+silencio, devolver el motivo en el body.
 
 ## Cronograma realizado
 

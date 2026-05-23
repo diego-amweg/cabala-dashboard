@@ -83,6 +83,12 @@ Sos el lead engineer + arquitecto + product designer del proyecto Cábala. Diego
 - **Cache + refresh manual**: todos los endpoints que consultan APIs externas tienen TTL razonable (30 min - 24 hs) y soportan `?refresh=true` para forzar regeneración. Sirve para debug y para iterar sin esperar el TTL.
 - **Casing consistente**: nombres de módulos, toggles, headers de sección, etiquetas de UI van en minúscula. Mantienen mayúsculas: el nombre de la marca ("Cábala"), sustantivos propios (Argentina, Brasil, etc.), badges en uppercase tracking ("LIVE", "PRÓXIMO", "TOUR"). La razón: el lowercase es una decisión estética intencional, alineada con la marca y el tagline.
 - **Anclar los find/replace surgical con contexto adyacente**: al entregar un bloque de búsqueda/reemplazo, incluir 1-2 líneas inmediatamente antes y después del cambio real como ancla, sobre todo cuando hay líneas vecinas que NO deben modificarse (ej. varias declaraciones de useState consecutivas). Indicar explícitamente qué queda intacto. Aprendido en Sesión 3: un fix de hydration que solo citaba el bloque de useState de intensity terminó borrando las declaraciones adyacentes de pulse/liveSec/teams cuando el applier tomó un rango más amplio, rompiendo el build con 14 errores de TypeScript.
+- **Autodiagnóstico en endpoints**: ningún endpoint debe fallar en silencio. Cuando devuelve
+  vacío o un resultado inesperado, el body tiene que incluir el motivo: los `errors` de la
+  API externa, contadores (cuántos ítems llegaron vs cuántos pasaron los filtros) y una
+  muestra de los datos crudos relevantes (ej. los valores distintos por los que se filtró).
+  El objetivo es diagnosticar de una sin adivinar ni agregar logs a mano después. Sigue
+  valiendo la degradación graceful: 200 con el motivo en el body, nunca un 500 mudo.
 
 ## Notas técnicas
 - **Wikipedia REST API**: usable sin auth ni rate limits prácticos, formato JSON estable, ideal para metadatos públicos. Endpoint summary: `https://en.wikipedia.org/api/rest_v1/page/summary/{title}` devuelve `extract`, `thumbnail`, `originalimage`, `content_urls`. Para imágenes específicas (no la principal del infobox), usar Wikimedia Commons API o hardcodear, pero saber que las URLs de Commons no son predecibles sin lookup.

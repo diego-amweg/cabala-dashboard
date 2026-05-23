@@ -14,3 +14,4 @@ Secciones (usar las que apliquen, no todas son obligatorias):
 - **Sprints deployados**: qué se entregó, con número de ADR si corresponde.
 - **Próximo (próxima sesión)**: qué arranca la próxima vez.
 - **ADRs agregados en esta sesión**: números.
+- **Pendiente**: <qué quedó sin cerrar>
