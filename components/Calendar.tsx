@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+
 interface FixtureItem {
   id: string;
   date: string;
@@ -12,17 +14,6 @@ interface FixtureItem {
   homeScore?: number;
   awayScore?: number;
 }
-
-const FIXTURES: FixtureItem[] = [
-  { id: '1', date: 'jue 25 jun', time: '18:42', home: 'México', away: 'Países Bajos', phase: 'octavos', venue: 'MetLife · NY/NJ', status: 'live', homeScore: 1, awayScore: 1 },
-  { id: '2', date: 'vie 26 jun', time: '13:00', home: 'Brasil', away: 'Croacia', phase: 'octavos', venue: 'NRG · Houston', status: 'scheduled' },
-  { id: '3', date: 'vie 26 jun', time: '17:00', home: 'Argentina', away: 'Estados Unidos', phase: 'octavos', venue: 'Mercedes-Benz · Atlanta', status: 'scheduled' },
-  { id: '4', date: 'vie 26 jun', time: '21:00', home: 'Francia', away: 'Senegal', phase: 'octavos', venue: 'SoFi · Los Ángeles', status: 'scheduled' },
-  { id: '5', date: 'sáb 27 jun', time: '13:00', home: 'España', away: 'Japón', phase: 'octavos', venue: 'MetLife · NY/NJ', status: 'scheduled' },
-  { id: '6', date: 'sáb 27 jun', time: '17:00', home: 'Inglaterra', away: 'Marruecos', phase: 'octavos', venue: 'BMO · Toronto', status: 'scheduled' },
-  { id: '7', date: 'sáb 27 jun', time: '21:00', home: 'Alemania', away: 'Portugal', phase: 'octavos', venue: 'Lincoln · Filadelfia', status: 'scheduled' },
-  { id: '8', date: 'dom 28 jun', time: '14:00', home: 'Por definir', away: 'Por definir', phase: 'cuartos', venue: 'AT&T · Dallas', status: 'scheduled' },
-];
 
 const STATUS_STYLES: Record<string, { bg: string; fg: string; label: string }> = {
   'live':      { bg: '#ffedd5', fg: '#9a3412', label: 'live' },
@@ -46,12 +37,45 @@ function groupByDate(fixtures: FixtureItem[]): { date: string; items: FixtureIte
 }
 
 export default function Calendar() {
-  const groups = groupByDate(FIXTURES);
+  const [fixtures, setFixtures] = useState<FixtureItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/fixtures');
+        const data = await res.json();
+        if (cancelled) return;
+        if (Array.isArray(data.items) && data.items.length > 0) {
+          setFixtures(data.items);
+        } else {
+          setError(true);
+        }
+      } catch {
+        if (!cancelled) setError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (loading) {
+    return <div className="rounded-xl border border-stone-200 bg-white p-6 text-center text-xs text-stone-400">cargando el fixture…</div>;
+  }
+
+  if (error || fixtures.length === 0) {
+    return <div className="rounded-xl border border-stone-200 bg-white p-6 text-center text-xs text-stone-400">el fixture no está disponible por ahora. probá de nuevo en un rato.</div>;
+  }
+
+  const groups = groupByDate(fixtures);
   let colorIdx = 0;
 
   return (
     <div className="rounded-xl border border-stone-200 bg-white p-3">
-      <div className="space-y-4">
+      <div className="max-h-[420px] space-y-4 overflow-y-auto pr-1">
         {groups.map(group => {
           const dotColor = group.isLive ? '#fb923c' : DAY_COLORS[colorIdx % DAY_COLORS.length];
           if (!group.isLive) colorIdx++;
@@ -74,14 +98,10 @@ export default function Calendar() {
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-stone-900">
                           <span className="font-medium">{f.home}</span>
-                          {showScore ? (
-                            <span className="mx-1.5 font-mono tabular-nums text-stone-700">{f.homeScore}-{f.awayScore}</span>
-                          ) : (
-                            <span className="mx-1.5 text-stone-400">vs</span>
-                          )}
+                          {showScore ? (<span className="mx-1.5 font-mono tabular-nums text-stone-700">{f.homeScore}-{f.awayScore}</span>) : (<span className="mx-1.5 text-stone-400">vs</span>)}
                           <span className="font-medium">{f.away}</span>
                         </div>
-                        <div className="truncate text-[10px] text-stone-500">{f.phase} · {f.venue}</div>
+                        <div className="truncate text-[10px] text-stone-500">{f.phase}{f.venue ? ` · ${f.venue}` : ''}</div>
                       </div>
                       <span className="shrink-0 rounded px-1.5 py-px text-[9px] font-medium uppercase tracking-wider" style={{ backgroundColor: st.bg, color: st.fg }}>
                         {f.status === 'live' && <span className="mr-1 inline-block h-1 w-1 animate-pulse rounded-full" style={{ backgroundColor: st.fg }} />}
@@ -95,7 +115,7 @@ export default function Calendar() {
           );
         })}
       </div>
-      <p className="mt-3 text-[9px] italic text-stone-400">fixture provisorio · sprint 5 lo conecta a api-football con resultados reales al cierre de cada partido</p>
+      <p className="mt-3 text-[9px] italic text-stone-400">fixture oficial del mundial · los resultados se actualizan durante el torneo</p>
     </div>
   );
 }
