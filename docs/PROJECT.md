@@ -4,6 +4,16 @@
 
 Plataforma personal para vivir el Mundial 2026 como fenómeno cultural total, no solo como torneo deportivo. Termómetro global configurable, en tiempo real, asistido por IA.
 
+## ⚠ PENDIENTE PARA EL ARRANQUE DEL MUNDIAL (11 jun 2026)
+- Resultados en vivo: el ticker y el calendario tienen que mostrar marcadores reales. El
+  endpoint /api/standings ya calcula puntos de partidos finalizados y el calendario ya mapea
+  scores, así que gran parte se "enciende solo"; falta verificar contra datos reales, bajar el
+  TTL del cache en días de partido y armar el ticker LIVE en page.tsx.
+- Bracket de eliminatorias (FixtureBracket): las llaves se cargan cuando football-data agregue
+  los partidos de Round of 32 en adelante (al cerrarse los grupos, ~27 jun). Conectar el
+  componente a los partidos que NO son GROUP_STAGE.
+- REVISAR estos dos apenas empiece el torneo, y de nuevo en la fase de eliminatorias.
+
 ## Estado del proyecto
 
 - **Versión actual**: v0.6 — Sprint 4 completo (módulos faltantes + capa inmersiva)
@@ -247,6 +257,21 @@ deuda menor de unificar). desempate: puntos → diferencia de gol → goles a fa
 (aproximación, no el desempate oficial FIFA con head-to-head).
 consecuencias: los 12 grupos muestran los 48 equipos reales con PJ/Pts; durante el mundial las
 posiciones se actualizan solas. pendiente de sprint 5: resultados en vivo y bracket.
+38. — el norte de cábala: el pulso emocional del mundo + pulso global real (wikipedia)
+contexto: el dashboard funcionaba como observatorio del mundial pero "no enganchaba". diego
+articuló la visión: cábala como el mapa emocional del mundo durante el mundial, en clave
+positiva (inspirado en el dashboard global de la pandemia, dado vuelta hacia lo emocional).
+diagnóstico: el pulso/sentimiento/intensidad del header y el mapa era todo Math.random()
+—movimiento falso—. faltaba verdad, escala global y crecimiento real.
+decisión: el corazón de cábala es el pulso global emocional, real y creciente. fuente v1: la
+ATENCIÓN mundial medida por las visitas a wikipedia al artículo del mundial 2026 en 6 idiomas
+(en/es/pt/fr/de/it), sumadas. endpoint /api/pulse: pulso 0-100 (hoy vs baseline de la ventana),
+tendencia semanal %, serie de 16 días, cache redis 6h, autodiagnóstico. el header muestra el
+número real + ↑% creciendo. google trends evaluado y descartado (sin API oficial; lo no oficial
+es frágil y bloqueable). bluesky (la voz) queda como segunda capa para el mundial.
+consecuencias: el pulso dejó de ser random; refleja el interés real del mundo creciendo hacia
+el 11/6 (al hacerlo: pulse 82, +27% semanal, serie ascendente). pendiente: el desglose por
+selección y los círculos del mapa siguen fake; se hacen reales en el próximo paso.
 
 ## Cronograma realizado
 

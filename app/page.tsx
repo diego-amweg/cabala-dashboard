@@ -95,6 +95,7 @@ type ModuleId = typeof ALL_MODULES[number];
 
 export default function CabalaDashboard() {
   const [pulse, setPulse] = useState(78);
+  const [pulseTrend, setPulseTrend] = useState<number | null>(null);
   const [liveSec, setLiveSec] = useState(60);
   const [teams, setTeams] = useState<Team[]>(INITIAL_TEAMS);
   const [intensity, setIntensity] = useState<Record<string, number>>({});
@@ -104,6 +105,16 @@ export default function CabalaDashboard() {
     const obj: Record<string, number> = {};
     CITIES.forEach(c => { obj[c.id] = 30 + Math.random() * 60; });
     setIntensity(obj);
+  }, []);
+
+  // pulso global real: atención mundial al mundial, vía wikipedia (se actualiza al cargar)
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/pulse')
+      .then(r => r.json())
+      .then(d => { if (!cancelled && typeof d.pulse === 'number' && d.pulse > 0) { setPulse(d.pulse); setPulseTrend(typeof d.trendPct === 'number' ? d.trendPct : null); } })
+      .catch(() => {});
+    return () => { cancelled = true; };
   }, []);
   const [memes, setMemes] = useState<FeedItem[]>([]);
   const [memesLoading, setMemesLoading] = useState(true);
@@ -138,7 +149,6 @@ export default function CabalaDashboard() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setPulse(p => Math.max(40, Math.min(98, p + rand(-4, 5))));
       setLiveSec(s => (s + 2 >= 90 * 60 ? 60 : s + 2));
       setTeams(prev => prev.map(t => ({ ...t, sentiment: Math.max(15, Math.min(95, t.sentiment + rand(-2.5, 2.8))) })));
       setIntensity(prev => {
@@ -223,6 +233,7 @@ export default function CabalaDashboard() {
                 <path d="M12 21s-7-4.35-7-10a4 4 0 0 1 7-2.65A4 4 0 0 1 19 11c0 5.65-7 10-7 10z" />
               </svg>
               <span className="font-mono text-sm font-medium tabular-nums text-stone-900">{Math.round(pulse)}</span>
+              {pulseTrend !== null && pulseTrend > 0 && <span className="text-[10px] font-medium text-emerald-600">↑{pulseTrend}%</span>}
             </div>
           </div>
         </header>
