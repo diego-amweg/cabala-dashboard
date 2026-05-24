@@ -272,6 +272,21 @@ es frágil y bloqueable). bluesky (la voz) queda como segunda capa para el mundi
 consecuencias: el pulso dejó de ser random; refleja el interés real del mundo creciendo hacia
 el 11/6 (al hacerlo: pulse 82, +27% semanal, serie ascendente). pendiente: el desglose por
 selección y los círculos del mapa siguen fake; se hacen reales en el próximo paso.
+39. — robustez ante football-data: stale-on-error + reintento en el front
+contexto: el calendario y los grupos aparecían vacíos en producción ("no disponible") aunque en
+local andaban, y un redeploy los "arreglaba". diagnóstico mirando el código (no de memoria): NO
+era prerender en build —next.config no tiene cacheComponents y ambos endpoints leen la request,
+así que ya eran dinámicos—. la causa: el cache (TTL 1h) expiraba sin visitas; la siguiente visita
+pegaba a football-data en frío; si la API tosía ahí (hipo o rate limit del free tier, 10/min), el
+endpoint devolvía vacío y el front (un solo fetch, sin reintento) quedaba pegado. el redeploy no
+arreglaba el fondo: al reabrir se reintentaba y la API respondía. un F5 bastaba.
+decisión: robustecer en dos capas. (1) endpoints fixtures/standings: guardar el último bueno en
+redis con TTL largo (7d) + "max age" lógico de 1h por timestamp para decidir el refresco; chequear
+res.ok; ante cualquier fallo servir el último bueno con stale:true en vez de vacío; nunca cachear
+vacío; autodiagnóstico en el body. (2) front Calendar/GroupStage: reintentar ante vacío/error (4
+intentos, backoff 2/4/6s) antes del mensaje amigable. elevado a convención obligatoria en CLAUDE.md.
+consecuencias: una vez que hubo datos, la pantalla no vuelve a quedar vacía aunque football-data se
+caiga. aplica de aquí en más a todo endpoint con dependencia externa.
 
 ## Cronograma realizado
 

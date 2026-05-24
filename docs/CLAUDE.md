@@ -70,6 +70,19 @@ Sos el lead engineer + arquitecto + product designer del proyecto Cábala. Diego
 - **`<a>` tags y elementos JSX multi-atributo en una sola línea**: nunca partir un `<a>`, `<Link>`, `<img>` o similar a través de múltiples líneas cuando tiene atributos largos. El navegador puede mutilar el tag al pegar y eso genera errores de build crípticos como `Unexpected token. Did you mean '{">"}' or '&gt;'?` (la `>` de cierre del tag queda interpretada como texto). Si la línea queda larga, dejá que quede larga; el linter no rompe el build por largo, sí rompe por paste mutilado. Tres precedentes ya: FanJourney (sprint 4b), ImmersiveLayer (sprint 4c), StadiumModal (sprint 4d-1.8).
 - **Orden de presentación de archivos = orden de commit**: si en una respuesta hay múltiples archivos con dependencias entre sí, presentar archivos en el orden exacto en que el usuario tiene que commitearlos. Nunca decir "acá van los archivos" en un orden y después "commiteá en este otro orden". Si las dependencias hacen que A deba commitearse antes que B, A se muestra primero.
 
+### Robustez ante APIs externas (convención obligatoria)
+Todo endpoint que dependa de una API externa degrada con gracia y nunca deja la pantalla vacía:
+- Guardar en Redis el último resultado bueno con TTL largo (días) y usar un "max age" lógico
+  por timestamp para decidir cuándo refrescar. No usar un TTL corto como única defensa: cuando
+  expira y la API falla justo ahí, la pantalla queda vacía.
+- Nunca cachear respuestas vacías ni de error (no envenenar el cache).
+- Chequear res.ok antes de leer el body.
+- Ante fallo (red, !ok, body inesperado, vacío): servir el último bueno conocido con flag
+  stale:true en vez de vacío. Devolver vacío solo si nunca hubo datos.
+- El front reintenta ante vacío/error (pocos intentos con backoff) antes de mostrar el mensaje
+  de "no disponible", que debe ser amigable.
+- Mantener el autodiagnóstico: el body informa el motivo del vacío aunque sirva stale.
+
 ## Información sensible
 
 - Nunca commits con API keys, tokens, contraseñas

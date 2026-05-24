@@ -4,7 +4,8 @@ import { teamES } from '@/lib/teams';
 
 const API_BASE = 'https://api.football-data.org/v4';
 const STANDINGS_CACHE_KEY = 'standings:groups';
-const STANDINGS_CACHE_TTL = 60 * 60; // 1h
+const STANDINGS_CACHE_TTL = 7 * 24 * 60 * 60; // 7d: último bueno conocido
+const STANDINGS_MAX_AGE = 60 * 60 * 1000;     // 1h: si es más viejo, intenta refrescar
 
 interface TeamRow {
   team: string;
@@ -26,34 +27,39 @@ function emptyRow(team: string): TeamRow {
   return { team, played: 0, won: 0, draw: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0 };
 }
 
+type Cached = { groups: Group[]; updatedAt: number };
+
 export async function GET(req: Request) {
   const forceRefresh = new URL(req.url).searchParams.get('refresh') === 'true';
+  const cached = await cacheGet<Cached>(STANDINGS_CACHE_KEY);
 
-  if (!forceRefresh) {
-    const cached = await cacheGet<{ groups: Group[]; updatedAt: number }>(STANDINGS_CACHE_KEY);
-    if (cached) {
-      return NextResponse.json({ groups: cached.groups, updatedAt: cached.updatedAt, cached: true });
-    }
+  if (cached && !forceRefresh && Date.now() - cached.updatedAt < STANDINGS_MAX_AGE) {
+    return NextResponse.json({ groups: cached.groups, updatedAt: cached.updatedAt, cached: true });
   }
+
+  const serveStaleOr = (fallback: Record<string, unknown>) => {
+    if (cached && cached.groups.length > 0) {
+      return NextResponse.json({ groups: cached.groups, updatedAt: cached.updatedAt, cached: true, stale: true });
+    }
+    return NextResponse.json({ groups: [], updatedAt: Date.now(), ...fallback });
+  };
 
   const key = process.env.FOOTBALLDATA_KEY;
-  if (!key) {
-    return NextResponse.json({ groups: [], updatedAt: Date.now(), error: 'falta la API key de football-data' });
-  }
+  if (!key) return serveStaleOr({ error: 'falta la API key de football-data' });
 
   try {
     const res = await fetch(`${API_BASE}/competitions/WC/matches?season=2026`, { headers: { 'X-Auth-Token': key } });
+
+    if (!res.ok) {
+      return serveStaleOr({ error: 'football-data no respondió bien', debug: { httpStatus: res.status } });
+    }
+
     const data = await res.json();
 
     if (!data.matches || !Array.isArray(data.matches)) {
-      return NextResponse.json({
-        groups: [], updatedAt: Date.now(), error: 'respuesta inesperada de football-data',
-        debug: { httpStatus: res.status, apiMessage: data.message ?? null, keys: Object.keys(data) },
-      });
+      return serveStaleOr({ error: 'respuesta inesperada de football-data', debug: { httpStatus: res.status, apiMessage: data.message ?? null, keys: Object.keys(data) } });
     }
 
-    // armamos una tabla por grupo desde los partidos de fase de grupos: los equipos
-    // salen de los partidos, los puntos se calculan de los que estén finalizados.
     const groupsMap = new Map<string, Map<string, TeamRow>>();
     const ensure = (letter: string, team: string): TeamRow => {
       if (!groupsMap.has(letter)) groupsMap.set(letter, new Map());
@@ -97,13 +103,12 @@ export async function GET(req: Request) {
 
     if (groups.length === 0) {
       const stages = Array.from(new Set(data.matches.map((m: any) => m.stage)));
-      return NextResponse.json({ groups: [], updatedAt: Date.now(), count: 0, debug: { totalReceived: data.matches.length, stages } });
+      return serveStaleOr({ count: 0, debug: { totalReceived: data.matches.length, stages } });
     }
 
     await cacheSet(STANDINGS_CACHE_KEY, { groups, updatedAt: Date.now() }, STANDINGS_CACHE_TTL);
-
     return NextResponse.json({ groups, updatedAt: Date.now(), count: groups.length });
   } catch {
-    return NextResponse.json({ groups: [], updatedAt: Date.now(), error: 'error al consultar football-data' });
+    return serveStaleOr({ error: 'error al consultar football-data' });
   }
 }

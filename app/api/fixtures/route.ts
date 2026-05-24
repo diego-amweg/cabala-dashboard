@@ -3,7 +3,8 @@ import { cacheGet, cacheSet } from '@/lib/cache';
 
 const API_BASE = 'https://api.football-data.org/v4';
 const FIXTURES_CACHE_KEY = 'fixtures:groups';
-const FIXTURES_CACHE_TTL = 60 * 60; // 1h
+const FIXTURES_CACHE_TTL = 7 * 24 * 60 * 60; // 7d en redis: guarda el último bueno conocido
+const FIXTURES_MAX_AGE = 60 * 60 * 1000;     // 1h: si el cache es más viejo, intenta refrescar
 
 interface FixtureItem {
   id: string;
@@ -18,8 +19,6 @@ interface FixtureItem {
   awayScore?: number;
 }
 
-// nombres de selecciones inglés -> español. lo que no esté acá sale con el nombre
-// original de football-data (fallback) y lo agregamos al verlo.
 const TEAM_ES: Record<string, string> = {
   'Argentina': 'Argentina', 'Brazil': 'Brasil', 'Uruguay': 'Uruguay', 'Paraguay': 'Paraguay',
   'Colombia': 'Colombia', 'Ecuador': 'Ecuador', 'Mexico': 'México', 'USA': 'Estados Unidos',
@@ -46,7 +45,6 @@ const DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
 function fmtAR(utcDate: string): { date: string; time: string } {
-  // football-data manda utcDate ISO en UTC. argentina = utc-3 fijo (sin horario de verano)
   const d = new Date(new Date(utcDate).getTime() - 3 * 3600 * 1000);
   const date = `${DIAS[d.getUTCDay()]} ${d.getUTCDate()} ${MESES[d.getUTCMonth()]}`;
   const time = `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
@@ -56,7 +54,7 @@ function fmtAR(utcDate: string): { date: string; time: string } {
 function mapStatus(status: string): 'scheduled' | 'live' | 'finished' {
   if (['FINISHED', 'AWARDED'].includes(status)) return 'finished';
   if (['IN_PLAY', 'PAUSED', 'EXTRA_TIME', 'PENALTY_SHOOTOUT', 'SUSPENDED'].includes(status)) return 'live';
-  return 'scheduled'; // SCHEDULED, TIMED, POSTPONED, CANCELLED
+  return 'scheduled';
 }
 
 function teamES(name: string): string {
@@ -68,30 +66,39 @@ function phaseLabel(group: string | null): string {
   return 'fase de grupos';
 }
 
+type Cached = { items: FixtureItem[]; updatedAt: number };
+
 export async function GET(req: Request) {
   const forceRefresh = new URL(req.url).searchParams.get('refresh') === 'true';
+  const cached = await cacheGet<Cached>(FIXTURES_CACHE_KEY);
 
-  if (!forceRefresh) {
-    const cached = await cacheGet<{ items: FixtureItem[]; updatedAt: number }>(FIXTURES_CACHE_KEY);
-    if (cached) {
-      return NextResponse.json({ items: cached.items, updatedAt: cached.updatedAt, cached: true });
-    }
+  // cache fresco (menos de 1h) y sin refresh forzado -> devolver directo
+  if (cached && !forceRefresh && Date.now() - cached.updatedAt < FIXTURES_MAX_AGE) {
+    return NextResponse.json({ items: cached.items, updatedAt: cached.updatedAt, cached: true });
   }
+
+  // ante cualquier fallo, servir el último bueno conocido en vez de vacío
+  const serveStaleOr = (fallback: Record<string, unknown>) => {
+    if (cached && cached.items.length > 0) {
+      return NextResponse.json({ items: cached.items, updatedAt: cached.updatedAt, cached: true, stale: true });
+    }
+    return NextResponse.json({ items: [], updatedAt: Date.now(), ...fallback });
+  };
 
   const key = process.env.FOOTBALLDATA_KEY;
-  if (!key) {
-    return NextResponse.json({ items: [], updatedAt: Date.now(), error: 'falta la API key de football-data' });
-  }
+  if (!key) return serveStaleOr({ error: 'falta la API key de football-data' });
 
   try {
     const res = await fetch(`${API_BASE}/competitions/WC/matches?season=2026`, { headers: { 'X-Auth-Token': key } });
+
+    if (!res.ok) {
+      return serveStaleOr({ error: 'football-data no respondió bien', debug: { httpStatus: res.status } });
+    }
+
     const data = await res.json();
 
     if (!data.matches || !Array.isArray(data.matches)) {
-      return NextResponse.json({
-        items: [], updatedAt: Date.now(), error: 'respuesta inesperada de football-data',
-        debug: { httpStatus: res.status, apiMessage: data.message ?? null, keys: Object.keys(data) },
-      });
+      return serveStaleOr({ error: 'respuesta inesperada de football-data', debug: { httpStatus: res.status, apiMessage: data.message ?? null, keys: Object.keys(data) } });
     }
 
     const groupMatches = data.matches
@@ -121,16 +128,12 @@ export async function GET(req: Request) {
 
     if (items.length === 0) {
       const stages = Array.from(new Set(data.matches.map((m: any) => m.stage)));
-      return NextResponse.json({
-        items: [], updatedAt: Date.now(), count: 0,
-        debug: { totalReceived: data.matches.length, stages, resultSet: data.resultSet ?? null },
-      });
+      return serveStaleOr({ count: 0, debug: { totalReceived: data.matches.length, stages, resultSet: data.resultSet ?? null } });
     }
 
     await cacheSet(FIXTURES_CACHE_KEY, { items, updatedAt: Date.now() }, FIXTURES_CACHE_TTL);
-
     return NextResponse.json({ items, updatedAt: Date.now(), count: items.length });
   } catch {
-    return NextResponse.json({ items: [], updatedAt: Date.now(), error: 'error al consultar football-data' });
+    return serveStaleOr({ error: 'error al consultar football-data' });
   }
 }

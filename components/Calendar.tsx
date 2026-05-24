@@ -43,22 +43,29 @@ export default function Calendar() {
 
   useEffect(() => {
     let cancelled = false;
+    const MAX_TRIES = 4;
+    const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
+
     (async () => {
-      try {
-        const res = await fetch('/api/fixtures');
-        const data = await res.json();
-        if (cancelled) return;
-        if (Array.isArray(data.items) && data.items.length > 0) {
-          setFixtures(data.items);
-        } else {
-          setError(true);
+      for (let attempt = 1; attempt <= MAX_TRIES && !cancelled; attempt++) {
+        try {
+          const res = await fetch('/api/fixtures');
+          const data = await res.json();
+          if (cancelled) return;
+          if (Array.isArray(data.items) && data.items.length > 0) {
+            setFixtures(data.items);
+            setError(false);
+            setLoading(false);
+            return;
+          }
+        } catch {
+          // sin conexión o error: caemos al reintento
         }
-      } catch {
-        if (!cancelled) setError(true);
-      } finally {
-        if (!cancelled) setLoading(false);
+        if (attempt < MAX_TRIES && !cancelled) await wait(attempt * 2000); // 2s, 4s, 6s
       }
+      if (!cancelled) { setError(true); setLoading(false); }
     })();
+
     return () => { cancelled = true; };
   }, []);
 
