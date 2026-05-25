@@ -12,39 +12,32 @@ import GifWall from '@/components/GifWall';
 import StadiumModal from '@/components/StadiumModal';
 import Ticker from '@/components/Ticker';
 import TeamBadge from '@/components/TeamBadge';
+import Thermometer from '@/components/Thermometer';
 import { MAP_VIEWBOX, COUNTRY_PATHS, STATE_PATHS, CITIES } from '@/data/mapData';
 
 const CURRENT_MATCH = 'octavos · México 1-1 Países Bajos · MetLife';
 const NEXT_MATCH = { teams: 'Brasil vs Croacia', date: 'vie 26 jun', time: '13:00 ART', venue: 'NRG · Houston' };
 
-interface Team { code: string; name: string; sentiment: number; }
-
-const INITIAL_TEAMS: Team[] = [
-  { code: 'ARG', name: 'Argentina',      sentiment: 88 },
-  { code: 'BRA', name: 'Brasil',         sentiment: 76 },
-  { code: 'URU', name: 'Uruguay',        sentiment: 82 },
-  { code: 'PAR', name: 'Paraguay',       sentiment: 70 },
-  { code: 'COL', name: 'Colombia',       sentiment: 75 },
-  { code: 'ECU', name: 'Ecuador',        sentiment: 68 },
-  { code: 'MEX', name: 'México',         sentiment: 72 },
-  { code: 'USA', name: 'Estados Unidos', sentiment: 60 },
-  { code: 'CAN', name: 'Canadá',         sentiment: 55 },
-  { code: 'FRA', name: 'Francia',        sentiment: 55 },
-  { code: 'ESP', name: 'España',         sentiment: 65 },
-  { code: 'JPN', name: 'Japón',          sentiment: 73 },
+// la tribu fija de 12 selecciones (code + nombre). el calor de cada una sale real de /api/heat.
+const TRIBE: { code: string; name: string }[] = [
+  { code: 'ARG', name: 'Argentina' },
+  { code: 'BRA', name: 'Brasil' },
+  { code: 'URU', name: 'Uruguay' },
+  { code: 'PAR', name: 'Paraguay' },
+  { code: 'COL', name: 'Colombia' },
+  { code: 'ECU', name: 'Ecuador' },
+  { code: 'MEX', name: 'México' },
+  { code: 'USA', name: 'Estados Unidos' },
+  { code: 'CAN', name: 'Canadá' },
+  { code: 'FRA', name: 'Francia' },
+  { code: 'ESP', name: 'España' },
+  { code: 'JPN', name: 'Japón' },
 ];
 
-function heatColor(s: number): { bg: string; fg: string } {
-  if (s < 35) return { bg: '#fee2e2', fg: '#991b1b' };
-  if (s < 50) return { bg: '#fed7aa', fg: '#9a3412' };
-  if (s < 65) return { bg: '#fef3c7', fg: '#78350f' };
-  if (s < 80) return { bg: '#d1fae5', fg: '#065f46' };
-  return { bg: '#a7f3d0', fg: '#064e3b' };
-}
+interface TeamHeat { code: string; name: string; views: number; heat: number; }
 
 interface FeedItem { tag: 'meme' | 'polémica' | 'pelea' | 'viral' | 'noticia'; text: string; when: string; score?: number; url?: string; author?: string; query?: string; relevance?: number; imageUrl?: string; }
 interface CalleItem { city: string; text: string; when?: string; }
-interface SufItem { code: string; label: string; text: string; }
 
 const CALLE: CalleItem[] = [
   { city: 'Kansas City', text: 'tailgate enorme afuera del Arrowhead. mexicanos cocinando pibil al lado de los gringos haciendo brisket' },
@@ -65,39 +58,17 @@ const CALLE: CalleItem[] = [
   { city: 'Seattle', text: 'caravana ciclista pro-USMNT llegó hasta Pike Place, drum line incluido' },
 ];
 
-const SUF: SufItem[] = [
-  { code: 'ARG', label: 'Argentina',      text: '37 millones conteniendo la respiración. cuadras enteras vacías' },
-  { code: 'BRA', label: 'Brasil',         text: 'rating histórico de TV: 78% de share nacional. Globo dispara' },
-  { code: 'URU', label: 'Uruguay',        text: 'el país clausurado por 90 minutos. la celeste se siente en la nuca' },
-  { code: 'PAR', label: 'Paraguay',       text: 'Asunción detenida. la albirroja vuelve después de 16 años' },
-  { code: 'COL', label: 'Colombia',       text: 'Bogotá baila antes del pitazo. cumbia en cada cuadra' },
-  { code: 'ECU', label: 'Ecuador',        text: 'Quito y Guayaquil paralizadas. tricolor desde el balcón hasta el techo' },
-  { code: 'MEX', label: 'México',         text: 'CDMX paralizada. el Zócalo se transformó en estadio gigante' },
-  { code: 'USA', label: 'Estados Unidos', text: 'sports bars al máximo. Coca-Cola dispara comerciales nuevos cada hora' },
-  { code: 'CAN', label: 'Canadá',         text: 'Toronto y Vancouver con cola en los pubs. timbits agotados a las dos cuadras' },
-  { code: 'FRA', label: 'Francia',        text: 'tensión mezclada con orgullo. la sombra de Qatar 2022 todavía pesa' },
-  { code: 'ESP', label: 'España',         text: 'Madrid y Barcelona en pausa. los bares con pantalla copan las aceras' },
-  { code: 'JPN', label: 'Japón',          text: 'cánticos sincronizados desde Tokio. 95k cantando como uno solo' },
-];
-
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
 const fmtMin = (sec: number) => `${Math.floor(sec / 60)}' +${(sec % 60) < 10 ? '0' + (sec % 60) : (sec % 60)}''`;
 
-function pickFresh<T>(pool: T[], current: T[], keyFn: (i: T) => string): T {
-  const used = new Set(current.map(keyFn));
-  const avail = pool.filter(i => !used.has(keyFn(i)));
-  const source = avail.length ? avail : pool;
-  return source[Math.floor(Math.random() * source.length)];
-}
-
-const ALL_MODULES = ['map', 'senti', 'suf', 'memes', 'calle', 'journey', 'calendar', 'gifs', 'road', 'immersive'] as const;
+const ALL_MODULES = ['map', 'senti', 'memes', 'calle', 'journey', 'calendar', 'gifs', 'road', 'immersive'] as const;
 type ModuleId = typeof ALL_MODULES[number];
 
 export default function CabalaDashboard() {
   const [pulse, setPulse] = useState(78);
   const [pulseTrend, setPulseTrend] = useState<number | null>(null);
   const [liveSec, setLiveSec] = useState(60);
-  const [teams, setTeams] = useState<Team[]>(INITIAL_TEAMS);
+  const [heat, setHeat] = useState<TeamHeat[]>([]);
   const [intensity, setIntensity] = useState<Record<string, number>>({});
 
   // Init aleatorio en cliente para evitar mismatch de hidratación (SSR vs CSR con Math.random)
@@ -116,11 +87,22 @@ export default function CabalaDashboard() {
       .catch(() => {});
     return () => { cancelled = true; };
   }, []);
+
+  // calor por selección real: atención por equipo, vía wikipedia (termómetro mundial)
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/heat')
+      .then(r => r.json())
+      .then(d => { if (!cancelled && Array.isArray(d.teams)) setHeat(d.teams); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   const [memes, setMemes] = useState<FeedItem[]>([]);
   const [memesLoading, setMemesLoading] = useState(true);
   const [memesError, setMemesError] = useState(false);
   const [activeMods, setActiveMods] = useState<Set<ModuleId>>(new Set(ALL_MODULES));
-  const [tribe, setTribe] = useState<Set<string>>(new Set(INITIAL_TEAMS.map(t => t.code)));
+  const [tribe, setTribe] = useState<Set<string>>(new Set(TRIBE.map(t => t.code)));
   const [selectedStadium, setSelectedStadium] = useState<string | null>(null);
   const [shared, setShared] = useState(false);
 
@@ -150,7 +132,6 @@ export default function CabalaDashboard() {
   useEffect(() => {
     const interval = setInterval(() => {
       setLiveSec(s => (s + 2 >= 90 * 60 ? 60 : s + 2));
-      setTeams(prev => prev.map(t => ({ ...t, sentiment: Math.max(15, Math.min(95, t.sentiment + rand(-2.5, 2.8))) })));
       setIntensity(prev => {
         const next: Record<string, number> = {};
         for (const k in prev) next[k] = Math.max(10, Math.min(100, prev[k] + rand(-8, 10)));
@@ -190,9 +171,10 @@ export default function CabalaDashboard() {
     }
   };
 
-  const visibleTeams = tribe.size ? teams.filter(t => tribe.has(t.code)) : teams;
-  const sortedTeams = [...visibleTeams].sort((a, b) => b.sentiment - a.sentiment);
-  const visibleSuf = tribe.size ? SUF.filter(s => tribe.has(s.code)) : SUF;
+  // termómetro: las selecciones de la tribu activa, ordenadas por calor real
+  const visibleHeat = (tribe.size ? heat.filter(h => tribe.has(h.code)) : heat)
+    .slice()
+    .sort((a, b) => b.heat - a.heat);
 
   let memesContent;
   if (memesLoading) memesContent = <p className="px-2 text-xs text-stone-400">trayendo y procesando posts...</p>;
@@ -259,8 +241,7 @@ export default function CabalaDashboard() {
         <div className="mt-6 flex flex-wrap gap-1.5">
           {[
             { id: 'map' as const, label: 'ojo de dios' },
-            { id: 'senti' as const, label: 'sentimiento' },
-            { id: 'suf' as const, label: 'sufrimiento' },
+            { id: 'senti' as const, label: 'termómetro' },
             { id: 'memes' as const, label: 'memes y polémicas' },
             { id: 'calle' as const, label: 'en las calles' },
             { id: 'journey' as const, label: 'viaje del hincha' },
@@ -284,7 +265,7 @@ export default function CabalaDashboard() {
             <span className="text-[10px] text-stone-400">click para enfocar</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {teams.map(t => {
+            {TRIBE.map(t => {
               const on = tribe.has(t.code);
               return (
                 <button key={t.code} onClick={() => toggleTribe(t.code)} className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${on ? 'border-emerald-400 bg-emerald-50 text-emerald-900' : 'border-stone-200 text-stone-500 hover:border-stone-300'}`}>
@@ -321,56 +302,21 @@ export default function CabalaDashboard() {
           </section>
         )}
 
-        <div className="mt-3 grid gap-3 lg:grid-cols-2">
-          {activeMods.has('senti') && (
-            <section>
-              <div className="mb-1.5 flex items-baseline justify-between">
-                <h2 className="text-xs font-medium tracking-wide text-stone-700">sentimiento</h2>
-                <span className="text-[10px] text-stone-400">mapa de calor · cariño</span>
-              </div>
-              <div className="rounded-xl border border-stone-200 bg-white p-3">
-                <div className="grid grid-cols-4 gap-1.5">
-                  {sortedTeams.map(t => {
-                    const c = heatColor(t.sentiment);
-                    return (
-                      <div key={t.code} className="flex flex-col items-center justify-center rounded-md p-2 transition-colors" style={{ backgroundColor: c.bg }}>
-                        <TeamBadge code={t.code} size="sm" />
-                        <span className="mt-1 text-[9px] font-medium tracking-wider" style={{ color: c.fg }}>{t.code}</span>
-                        <span className="font-mono text-sm font-medium tabular-nums" style={{ color: c.fg }}>{Math.round(t.sentiment)}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </section>
-          )}
-          {activeMods.has('suf') && (
-            <section>
-              <div className="mb-1.5 flex items-baseline justify-between">
-                <h2 className="text-xs font-medium tracking-wide text-stone-700">sufrimiento compartido</h2>
-                <span className="text-[10px] text-stone-400">ansiedad en vivo</span>
-              </div>
-              <div className="space-y-2 rounded-xl border border-stone-200 bg-white p-3">
-                {visibleSuf.map(s => {
-                  const team = teams.find(tm => tm.code === s.code);
-                  const anxiety = team ? Math.round(100 - team.sentiment) : 50;
-                  return (
-                    <div key={s.code} className="flex items-start gap-3 rounded-md bg-stone-50 p-2.5">
-                      <TeamBadge code={s.code} size="md" />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-baseline justify-between gap-2">
-                          <span className="text-[10px] font-medium uppercase tracking-wider text-stone-700">{s.label}</span>
-                          <span className="font-mono text-sm tabular-nums text-stone-900">{anxiety}<span className="ml-0.5 text-[9px] text-stone-400">ans</span></span>
-                        </div>
-                        <p className="mt-1 text-xs leading-relaxed text-stone-700">{s.text}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-        </div>
+        {activeMods.has('senti') && (
+          <section className="mt-3">
+            <div className="mb-1.5 flex items-baseline justify-between">
+              <h2 className="text-xs font-medium tracking-wide text-stone-700">termómetro mundial</h2>
+              <span className="text-[10px] text-stone-400">cuánto mira el planeta a cada selección · Wikipedia</span>
+            </div>
+            <div className="rounded-xl border border-stone-200 bg-white p-3">
+              {visibleHeat.length === 0 ? (
+                <p className="px-2 text-xs text-stone-400">midiendo el calor del mundo…</p>
+              ) : (
+                <Thermometer teams={visibleHeat} />
+              )}
+            </div>
+          </section>
+        )}
 
         {activeMods.has('memes') && (
           <section className="mt-3">

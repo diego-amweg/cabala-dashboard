@@ -287,6 +287,14 @@ vacío; autodiagnóstico en el body. (2) front Calendar/GroupStage: reintentar a
 intentos, backoff 2/4/6s) antes del mensaje amigable. elevado a convención obligatoria en CLAUDE.md.
 consecuencias: una vez que hubo datos, la pantalla no vuelve a quedar vacía aunque football-data se
 caiga. aplica de aquí en más a todo endpoint con dependencia externa.
+40. — termómetro mundial: calor por selección (atención vía wikipedia) + treemap con latido
+decisión: el módulo "sentimiento" pasa a ser "termómetro mundial". mide cuánto mira el planeta a cada selección (atención, no cariño) con pageviews del artículo del equipo nacional en wikipedia. visualización: treemap squarified (cada selección un rectángulo de área proporcional a su calor, tesela todo el espacio sin huecos, estilo finviz) con latido por calor (cada bloque respira; el más caliente late más rápido y fuerte).
+por qué atención y no afecto: el cariño puro no es medible bien con fuentes gratis. evaluamos bluesky para medir sentimiento y lo descartamos: su base está fuertemente sesgada (ee.uu., después japón/brasil/uk/alemania; argentina, áfrica y medio oriente casi ausentes), justo al revés de donde el fútbol arde. medir ahí daría un retrato falso. el sentimiento emocional queda como capa futura para el mundial. por ahora, atención honesta vía wikipedia, declarada como tal en la bajada del módulo.
+implementación:
+- endpoint /api/heat: pageviews de los últimos 7 días (hasta anteayer, por el delay de wikipedia) del artículo de cada equipo nacional de las 12, en en.wikipedia. heat 0-100 = sqrt(views/maxViews)*100 (suaviza la brecha entre el más y el menos visto). aplica robustez stale-on-error (cache 7d + maxAge 6h, sirve el último bueno ante fallo, nunca cachea vacío, autodiagnóstico de fuentes).
+- componente Thermometer.tsx: treemap squarified (bruls et al.) recalculado al ancho real del contenedor (ResizeObserver, responsive). latido por calor con keyframe css, respeta prefers-reduced-motion.
+bajas: se eliminó el módulo "sufrimiento compartido" (era fake: textos hardcodeados + ansiedad = 100 - sentimiento). se quitó el sentimiento random del header/teams (también fake).
+pendiente: medir en inglés es anglocéntrico (brasil/francia pesan de más; argentina pesaría más con español). para escalar a las 48 o afinar, sumar idiomas por equipo (es/pt/fr...).
 
 ## Cronograma realizado
 

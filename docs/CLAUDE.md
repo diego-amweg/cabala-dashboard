@@ -83,6 +83,20 @@ Todo endpoint que dependa de una API externa degrada con gracia y nunca deja la 
   de "no disponible", que debe ser amigable.
 - Mantener el autodiagnóstico: el body informa el motivo del vacío aunque sirva stale.
 
+### no dar por hecho lo no confirmado
+- nunca afirmar que un archivo, endpoint, ruta o dato existe o funciona sin haberlo confirmado. si no se puede verificar, pedir confirmación antes de mandar a probarlo.
+- los scripts que crean archivos en rutas nuevas deben crear el directorio primero (mkdir -p): cat >/redirección no crea carpetas.
+- bash sigue con el comando siguiente aunque el anterior falle, así que un echo "listo" no prueba nada. cerrar los scripts de creación con una verificación real (wc -l o ls -l del archivo).
+
+### empatía con los usuarios
+- diseñar pensando en quien está del otro lado, sin asumir que todos ven, pueden o quieren lo mismo.
+- respetar las preferencias de accesibilidad del sistema. en particular prefers-reduced-motion: si el usuario pidió menos movimiento (mareo, epilepsia, o gusto), las animaciones decorativas se apagan o se vuelven mínimas.
+- errores y estados vacíos se hablan en humano, no en jerga técnica.
+
+### el dashboard tiene que estar vivo (en dos capas)
+- cábala es el pulso del mundo; un módulo tieso lo contradice. todo módulo debería transmitir vida.
+- pero en dos capas, y la segunda es la que importa: (1) movimiento sutil (latidos, respiración, transiciones) para quien acepta animación; (2) dato real, fresco y que cambia solo — el pulso que de verdad sube, el calor que se reordena — que llega a todos, incluso con el movimiento apagado. la vida nunca depende solo de la animación, y nunca es de adorno fake.
+
 ## Información sensible
 
 - Nunca commits con API keys, tokens, contraseñas
