@@ -116,6 +116,7 @@ Todo endpoint que dependa de una API externa degrada con gracia y nunca deja la 
   muestra de los datos crudos relevantes (ej. los valores distintos por los que se filtró).
   El objetivo es diagnosticar de una sin adivinar ni agregar logs a mano después. Sigue
   valiendo la degradación graceful: 200 con el motivo en el body, nunca un 500 mudo.
+- **Correr `npx tsc --noEmit` antes de cada `git push`**: el modo dev (Turbopack) no hace el chequeo de tipos completo, así que un error de tipos pasa desapercibido en local y recién rompe el `next build` de Vercel, gastando un build. `npx tsc --noEmit` corre el mismo chequeo en tu máquina en segundos. Aprendido cuando el termómetro a 48 rompió el build por dos interfaces `TeamHeat` desalineadas (page.tsx sin `crest`).
 
 ## Notas técnicas
 - **Wikipedia REST API**: usable sin auth ni rate limits prácticos, formato JSON estable, ideal para metadatos públicos. Endpoint summary: `https://en.wikipedia.org/api/rest_v1/page/summary/{title}` devuelve `extract`, `thumbnail`, `originalimage`, `content_urls`. Para imágenes específicas (no la principal del infobox), usar Wikimedia Commons API o hardcodear, pero saber que las URLs de Commons no son predecibles sin lookup.
