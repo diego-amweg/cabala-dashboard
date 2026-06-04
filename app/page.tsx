@@ -171,11 +171,6 @@ export default function CabalaDashboard() {
     }
   };
 
-  // termómetro: las selecciones de la tribu activa, ordenadas por calor real
-  const visibleHeat = (tribe.size ? heat.filter(h => tribe.has(h.code)) : heat)
-    .slice()
-    .sort((a, b) => b.heat - a.heat);
-
   let memesContent;
   if (memesLoading) memesContent = <p className="px-2 text-xs text-stone-400">trayendo y procesando posts...</p>;
   else if (memesError) memesContent = <p className="px-2 text-xs text-stone-400">no se pudo conectar con bluesky.</p>;
@@ -309,10 +304,10 @@ export default function CabalaDashboard() {
               <span className="text-[10px] text-stone-400">cuánto mira el planeta a cada selección · Wikipedia</span>
             </div>
             <div className="rounded-xl border border-stone-200 bg-white p-3">
-              {visibleHeat.length === 0 ? (
+              {heat.length === 0 ? (
                 <p className="px-2 text-xs text-stone-400">midiendo el calor del mundo…</p>
               ) : (
-                <Thermometer teams={visibleHeat} />
+                <Thermometer teams={heat} tribeNames={TRIBE.filter(t => tribe.has(t.code)).map(t => t.name)} />
               )}
             </div>
           </section>

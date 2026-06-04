@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import TeamBadge from '@/components/TeamBadge';
 
-interface TeamHeat { code: string; name: string; views: number; heat: number; }
+interface TeamHeat { code: string; name: string; crest: string | null; views: number; heat: number; }
 interface Rect { x: number; y: number; w: number; h: number; team: TeamHeat; }
 type Scaled = { team: TeamHeat; area: number };
 
@@ -15,7 +14,6 @@ function heatColor(s: number): { bg: string; fg: string } {
   return { bg: '#6ee7b7', fg: '#064e3b' };
 }
 
-// squarified treemap (Bruls et al.): tesela todo el área, área de cada rect proporcional al calor
 function worstRatio(areas: number[], side: number, sumArea: number): number {
   const length = sumArea / side;
   let worst = 0;
@@ -58,7 +56,8 @@ function squarify(teams: TeamHeat[], W: number, H: number): Rect[] {
 
 const GAP = 4;
 
-export default function Thermometer({ teams }: { teams: TeamHeat[] }) {
+export default function Thermometer({ teams, tribeNames }: { teams: TeamHeat[]; tribeNames: string[] }) {
+  const [showAll, setShowAll] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
 
@@ -70,30 +69,45 @@ export default function Thermometer({ teams }: { teams: TeamHeat[] }) {
     return () => ro.disconnect();
   }, []);
 
-  const height = width > 0 && width < 560 ? Math.round(width * 1.1) : 380;
-  const rects = useMemo(() => (width > 0 ? squarify(teams, width, height) : []), [teams, width, height]);
+  const visible = useMemo(() => {
+    const list = showAll ? teams : teams.filter(t => tribeNames.includes(t.name));
+    return list.slice().sort((a, b) => b.heat - a.heat);
+  }, [teams, tribeNames, showAll]);
+
+  const height = width > 0 && width < 560 ? Math.round(width * 1.15) : 420;
+  const rects = useMemo(() => (width > 0 ? squarify(visible, width, height) : []), [visible, width, height]);
+
+  const btn = (active: boolean) => `rounded-md border px-2.5 py-1 text-[11px] transition-colors ${active ? 'border-orange-300 bg-orange-50 text-orange-950' : 'border-stone-200 text-stone-400 hover:border-stone-300'}`;
 
   return (
-    <div ref={ref} className="relative w-full overflow-hidden rounded-lg bg-white" style={{ height }}>
-      <style dangerouslySetInnerHTML={{ __html: `@keyframes thermo-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.055); } } @media (prefers-reduced-motion: reduce) { .thermo-beat { animation: none !important; } }` }} />
-      {rects.map((r, idx) => {
-        const c = heatColor(r.team.heat);
-        const small = Math.min(r.w, r.h);
-        const numSize = Math.max(13, Math.min(36, small * 0.24));
-        const codeSize = Math.max(8, Math.min(14, small * 0.11));
-        const showBadge = small > 46;
-        const dur = (4.4 - (r.team.heat / 100) * 2.2).toFixed(2);
-        const delay = ((idx % 6) * 0.19).toFixed(2);
-        return (
-          <div key={r.team.code} title={`${r.team.name} · ${r.team.views.toLocaleString('es-AR')} vistas en Wikipedia`} className="absolute flex flex-col items-center justify-center overflow-hidden rounded-md" style={{ left: r.x + GAP / 2, top: r.y + GAP / 2, width: Math.max(0, r.w - GAP), height: Math.max(0, r.h - GAP), backgroundColor: c.bg, color: c.fg }}>
-            <div className="thermo-beat flex flex-col items-center justify-center" style={{ animation: `thermo-breathe ${dur}s ease-in-out ${delay}s infinite`, transformOrigin: 'center' }}>
-              {showBadge && <TeamBadge code={r.team.code} size="sm" />}
-              <span className="mt-0.5 font-medium tracking-wider" style={{ fontSize: codeSize }}>{r.team.code}</span>
-              <span className="font-mono font-semibold tabular-nums leading-none" style={{ fontSize: numSize }}>{r.team.heat}</span>
+    <div>
+      <div className="mb-2 flex items-center justify-end gap-1">
+        <button onClick={() => setShowAll(false)} className={btn(!showAll)}>mi tribu</button>
+        <button onClick={() => setShowAll(true)} className={btn(showAll)}>las 48</button>
+      </div>
+      <div ref={ref} className="relative w-full overflow-hidden rounded-lg bg-white" style={{ height }}>
+        <style dangerouslySetInnerHTML={{ __html: `@keyframes thermo-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.055); } } @media (prefers-reduced-motion: reduce) { .thermo-beat { animation: none !important; } }` }} />
+        {rects.map((r, idx) => {
+          const c = heatColor(r.team.heat);
+          const small = Math.min(r.w, r.h);
+          const numSize = Math.max(11, Math.min(34, small * 0.22));
+          const codeSize = Math.max(7, Math.min(13, small * 0.1));
+          const crestSize = Math.min(42, Math.round(small * 0.42));
+          const showCrest = small > 40 && !!r.team.crest;
+          const showCode = small > 30;
+          const dur = (4.4 - (r.team.heat / 100) * 2.2).toFixed(2);
+          const delay = ((idx % 6) * 0.19).toFixed(2);
+          return (
+            <div key={r.team.code} title={`${r.team.name} · ${r.team.views.toLocaleString('es-AR')} vistas en Wikipedia`} className="absolute flex flex-col items-center justify-center overflow-hidden rounded-md" style={{ left: r.x + GAP / 2, top: r.y + GAP / 2, width: Math.max(0, r.w - GAP), height: Math.max(0, r.h - GAP), backgroundColor: c.bg, color: c.fg }}>
+              <div className="thermo-beat flex flex-col items-center justify-center" style={{ animation: `thermo-breathe ${dur}s ease-in-out ${delay}s infinite`, transformOrigin: 'center' }}>
+                {showCrest && <img src={r.team.crest!} alt="" loading="lazy" className="object-contain" style={{ width: crestSize, height: crestSize }} />}
+                {showCode && <span className="mt-0.5 font-medium tracking-wider" style={{ fontSize: codeSize }}>{r.team.code}</span>}
+                <span className="font-mono font-semibold tabular-nums leading-none" style={{ fontSize: numSize }}>{r.team.heat}</span>
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }

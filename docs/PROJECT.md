@@ -328,3 +328,18 @@ Después de Sprint 7 entramos en modo "uso del producto durante el Mundial" con 
 - **Componentes React**: PascalCase para el nombre del componente, kebab-case para el archivo
 - **API keys**: nunca en commits; van en `.env.local` (gitignored) y en Vercel Environment Variables
 - **Importes en `app/`**: alias `@/components/...` (configurado en tsconfig.json)
+
+## ADR 41 — Termómetro escalado a las 48 selecciones
+
+Contexto: el termómetro v1 (ADR 40) medía solo las 12 de la tribu y de forma anglocéntrica. Lo escalamos a las 48 del Mundial.
+
+Decisión:
+- La lista de las 48 se deriva en runtime de football-data (no se hardcodea), con escudo (crest) y código (tla).
+- La atención se mide en en.wikipedia. Para no medir redirects ni variantes (que dan vistas basura aunque la API responda 200), /api/heat resuelve el título canónico vía la API de Wikipedia (redirects=1) antes de pedir pageviews. Overrides puntuales donde "football" != fútbol soccer (USA, Canadá, Australia -> "men's national soccer team") y para selecciones renombradas con "men's" (Suecia, Nueva Zelanda).
+- Concurrencia limitada (5) + retry ante fallo intermitente, para no gatillar el rate limit de Wikipedia, que tiraba equipos a 0/null al azar.
+- Thermometer.tsx: usa los escudos de football-data (img normal, sin next/image, para no configurar dominios remotos) + toggle "mi tribu"/"las 48". La tribu se filtra por nombre ES, porque el tla de football-data no coincide con los codes de la tribu (ej. URY vs URU).
+- Medido en inglés. El idioma nativo (modo b) queda como sprint corto siguiente. Wikidata sería la solución definitiva de títulos si se quiere cero fragilidad.
+
+Aprendizaje: got:true (la API devolvió algo) no garantiza dato correcto — un redirect mide casi cero. El autodiagnóstico del endpoint expone candidate/canonical/views justamente para cazar esto antes de pintar.
+
+
