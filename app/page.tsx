@@ -84,7 +84,7 @@ export default function CabalaDashboard() {
     fetch('/api/pulse')
       .then(r => r.json())
       .then(d => { if (!cancelled && typeof d.pulse === 'number' && d.pulse > 0) { setPulse(d.pulse); setPulseTrend(typeof d.trendPct === 'number' ? d.trendPct : null); } })
-      .catch(() => {});
+      .catch(() => { });
     return () => { cancelled = true; };
   }, []);
 
@@ -94,7 +94,7 @@ export default function CabalaDashboard() {
     fetch('/api/heat')
       .then(r => r.json())
       .then(d => { if (!cancelled && Array.isArray(d.teams)) setHeat(d.teams); })
-      .catch(() => {});
+      .catch(() => { });
     return () => { cancelled = true; };
   }, []);
 
@@ -193,7 +193,7 @@ export default function CabalaDashboard() {
 
   return (
     <main className="min-h-screen bg-stone-50 text-stone-900 selection:bg-orange-200">
-      <style dangerouslySetInnerHTML={{__html: `@keyframes cabala-heartbeat { 0%, 100% { transform: scale(1); } 25% { transform: scale(1.25); } 50% { transform: scale(0.95); } 75% { transform: scale(1.18); } }`}} />
+      <style dangerouslySetInnerHTML={{ __html: `@keyframes cabala-heartbeat { 0%, 100% { transform: scale(1); } 25% { transform: scale(1.25); } 50% { transform: scale(0.95); } 75% { transform: scale(1.18); } }` }} />
 
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
         <header className="flex flex-col gap-3 border-b border-stone-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
@@ -202,7 +202,7 @@ export default function CabalaDashboard() {
             <p className="mt-1 text-sm text-stone-500">la superstición se hizo software</p>
           </div>
           <div className="flex flex-col items-start gap-2 sm:items-end">
-          <button onClick={shareCabala} className="inline-flex items-center gap-1.5 rounded-md border border-orange-300 bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-900 transition-colors hover:bg-orange-100"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>{shared ? 'copiado' : 'compartir'}</button>
+            <button onClick={shareCabala} className="inline-flex items-center gap-1.5 rounded-md border border-orange-300 bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-900 transition-colors hover:bg-orange-100"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>{shared ? 'copiado' : 'compartir'}</button>
             <div className="font-mono text-xs text-stone-500">día 12 · jue 25 jun · 18:42 ART</div>
             <div className="flex items-center gap-2.5 rounded-md bg-stone-100 px-3 py-1.5">
               <span className="text-[10px] uppercase tracking-wider text-stone-500">pulso global</span>
@@ -301,7 +301,7 @@ export default function CabalaDashboard() {
           <section className="mt-3">
             <div className="mb-1.5 flex items-baseline justify-between">
               <h2 className="text-xs font-medium tracking-wide text-stone-700">termómetro mundial</h2>
-              <span className="text-[10px] text-stone-400">cuánto mira el planeta a cada selección · Wikipedia</span>
+              <span className="text-[10px] text-stone-400">cuánto mira el planeta a cada selección · inglés + idioma local · Wikipedia</span>
             </div>
             <div className="rounded-xl border border-stone-200 bg-white p-3">
               {heat.length === 0 ? (

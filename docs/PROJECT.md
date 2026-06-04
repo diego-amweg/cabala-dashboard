@@ -343,3 +343,19 @@ Decisión:
 Aprendizaje: got:true (la API devolvió algo) no garantiza dato correcto — un redirect mide casi cero. El autodiagnóstico del endpoint expone candidate/canonical/views justamente para cazar esto antes de pintar.
 
 
+
+## ADR 42 — Termómetro: idioma nativo además del inglés (modo b)
+
+Contexto: el termómetro a 48 (ADR 41) medía atención solo en en.wikipedia, con sesgo anglocéntrico (Inglaterra/España/USA pesaban de más; Argentina/Brasil/Japón de menos respecto a su pasión real).
+
+Decisión: para cada selección se mide la atención en inglés MÁS en su idioma nativo, sumadas. El título nativo no se adivina: se obtiene del langlink del artículo canónico EN vía la API de Wikipedia (action=query&prop=langlinks&lllang=X), fuente de verdad sin fragilidad de títulos. Mapa país→idioma en lib/teams.ts (NATIVE_LANG); los 8 anglófonos (USA, Inglaterra, Escocia, Canadá, Australia, NZ, Ghana, Sudáfrica) se omiten (su atención ya está en EN). Costo: ~144 pedidos a Wikipedia por refresco, concurrencia 5 + retry, ~15s en frío, cache 6h.
+
+Consecuencias: el podio se globaliza. Validado con vistas absolutas: portugués +32k a Brasil, alemán +34k a Alemania, japonés +25k a Japón, español a Argentina/España/México; los anglófonos quedan igual; ningún langlink falló. La bajada del módulo declara "inglés + idioma local". Wikidata deja de ser necesario para los títulos (los langlinks lo resuelven).
+
+## ADR 27 (enmienda) — Antigravity como ejecutor controlado
+
+Contexto: a días del Mundial y con backlog grande, se busca velocidad. El ADR 27 había descartado Claude Code como ejecutor por control. Se reincorpora un ejecutor agéntico (Antigravity IDE), pero con guardrails que preservan el control.
+
+Decisión: división de trabajo. Claude (chat) sigue de arquitecto/diseño/producto y escribe specs estrictas (formato anti-alucinación, anclando el stack real: Anthropic/football-data/Wikipedia/Bluesky, NO el stack Google de Antigravity). Antigravity ejecuta tareas ACOTADAS y cierra cada una con npx tsc --noEmit (y npm run build cuando toca). Diego revisa el diff antes de commitear. Tareas chicas y verificables, no "construí el módulo entero". Si Antigravity sugiere cambiar de proveedor de IA o sumar Genkit/Gemini, se frena.
+
+Consecuencias: más velocidad sin perder el control que motivó el ADR 27 original. El riesgo de errores silenciosos del agente se mitiga con verificación obligatoria + revisión de diff + acotamiento.

@@ -1,16 +1,13 @@
 import { NextResponse } from 'next/server';
 import { cacheGet, cacheSet } from '@/lib/cache';
-import { teamES } from '@/lib/teams';
+import { teamES, nativeLang } from '@/lib/teams';
 
 const API_BASE = 'https://api.football-data.org/v4';
 const HEAT_CACHE_KEY = 'heat:teams';
 const HEAT_CACHE_TTL = 7 * 24 * 60 * 60;
 const HEAT_MAX_AGE = 6 * 60 * 60 * 1000;
 const UA = 'CabalaDashboard/1.0 (https://cabala-dashboard.vercel.app; mundial 2026)';
-const PROJECT = 'en.wikipedia.org';
 
-// override solo donde el título derivado no es el artículo de la selección masculina actual.
-// el resto de los desvíos (redirects) los resuelve solo resolveCanonical().
 const EN_ARTICLE_OVERRIDE: Record<string, string> = {
   'United States': "United States men's national soccer team",
   'Canada': "Canada men's national soccer team",
@@ -27,7 +24,6 @@ function ymd(d: Date): string {
   return `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}${String(d.getUTCDate()).padStart(2, '0')}`;
 }
 
-// concurrencia limitada: evita el burst de pedidos que hacía a wikipedia cortar algunos al azar
 async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const out: R[] = new Array(items.length);
   let idx = 0;
@@ -41,7 +37,6 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promis
   return out;
 }
 
-// reintenta una vez ante un fallo intermitente de red (evita que un equipo caiga a 0 por un hipo suelto)
 async function retryNull<T>(fn: () => Promise<T | null>, tries = 2): Promise<T | null> {
   for (let i = 0; i < tries; i++) {
     const r = await fn();
@@ -51,25 +46,31 @@ async function retryNull<T>(fn: () => Promise<T | null>, tries = 2): Promise<T |
   return null;
 }
 
-async function resolveCanonical(title: string): Promise<string | null> {
-  const url = `https://${PROJECT}/w/api.php?action=query&format=json&redirects=1&titles=${encodeURIComponent(title)}`;
+// resuelve el título canónico en inglés (sigue redirects) y, si hay idioma nativo, su langlink (título nativo exacto).
+// una sola llamada devuelve ambos. los langlinks son la fuente de verdad de wikipedia: nada de adivinar títulos.
+async function resolveTitles(title: string, lang: string | null): Promise<{ canonical: string | null; nativeTitle: string | null } | null> {
+  const ll = lang ? `&prop=langlinks&lllang=${lang}&lllimit=1` : '';
+  const url = `https://en.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&redirects=1&titles=${encodeURIComponent(title)}${ll}`;
   try {
     const res = await fetch(url, { headers: { 'User-Agent': UA } });
     if (!res.ok) return null;
     const data = await res.json();
-    const pages = data?.query?.pages;
-    if (!pages) return null;
-    const page = Object.values(pages)[0] as { title?: string; missing?: string };
-    if (page?.missing !== undefined) return null;
-    return page?.title ?? null;
+    const page = data?.query?.pages?.[0];
+    if (!page || page.missing) return { canonical: null, nativeTitle: null };
+    const canonical = page.title ?? null;
+    let nativeTitle: string | null = null;
+    if (lang && Array.isArray(page.langlinks) && page.langlinks.length > 0) {
+      nativeTitle = page.langlinks[0]?.title ?? null;
+    }
+    return { canonical, nativeTitle };
   } catch {
     return null;
   }
 }
 
-async function fetchViews(article: string, start: string, end: string): Promise<number | null> {
+async function fetchViews(project: string, article: string, start: string, end: string): Promise<number | null> {
   const enc = encodeURIComponent(article.replace(/ /g, '_'));
-  const url = `https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/${PROJECT}/all-access/all-agents/${enc}/daily/${start}/${end}`;
+  const url = `https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/${project}/all-access/all-agents/${enc}/daily/${start}/${end}`;
   try {
     const res = await fetch(url, { headers: { 'User-Agent': UA, accept: 'application/json' } });
     if (!res.ok) return null;
@@ -132,28 +133,36 @@ export async function GET(req: Request) {
   const startStr = ymd(start);
   const endStr = ymd(end);
 
-  // resolver canónico + medir, de a 5 a la vez (no en burst)
+  // por equipo: canónico EN + título nativo (una llamada) -> pageviews EN + pageviews nativo, sumadas
   const results = await mapLimit(fdTeams, 5, async t => {
     const candidate = enArticle(t.name);
-    const canonical = await retryNull(() => resolveCanonical(candidate));
-    const views = canonical ? await retryNull(() => fetchViews(canonical, startStr, endStr)) : null;
-    return { ...t, candidate, canonical, views };
+    const lang = nativeLang(t.name);
+    const titles = await retryNull(() => resolveTitles(candidate, lang));
+    const canonical = titles?.canonical ?? null;
+    const nativeTitle = titles?.nativeTitle ?? null;
+    const viewsEN = canonical ? await retryNull(() => fetchViews('en.wikipedia.org', canonical, startStr, endStr)) : null;
+    const viewsNative = (lang && nativeTitle) ? await retryNull(() => fetchViews(`${lang}.wikipedia.org`, nativeTitle, startStr, endStr)) : null;
+    return { ...t, lang, canonical, nativeTitle, viewsEN, viewsNative };
   });
 
-  const got = results.filter(r => r.views !== null);
-  if (got.length === 0) {
+  const totalViews = (r: { viewsEN: number | null; viewsNative: number | null }) => (r.viewsEN ?? 0) + (r.viewsNative ?? 0);
+  const ok = results.filter(r => r.viewsEN !== null || r.viewsNative !== null);
+  if (ok.length === 0) {
     return serveStaleOr({ error: 'wikipedia no respondió', debug: { window: `${startStr}-${endStr}` } });
   }
 
-  const maxViews = Math.max(...got.map(r => r.views as number));
+  const maxViews = Math.max(...ok.map(totalViews));
   const teams: TeamHeat[] = results
-    .map(r => ({
-      code: r.tla ?? r.name.slice(0, 3).toUpperCase(),
-      name: teamES(r.name),
-      crest: r.crest,
-      views: r.views ?? 0,
-      heat: maxViews > 0 && r.views ? Math.max(5, Math.round(Math.sqrt(r.views / maxViews) * 100)) : 0,
-    }))
+    .map(r => {
+      const v = totalViews(r);
+      return {
+        code: r.tla ?? r.name.slice(0, 3).toUpperCase(),
+        name: teamES(r.name),
+        crest: r.crest,
+        views: v,
+        heat: maxViews > 0 && v > 0 ? Math.max(5, Math.round(Math.sqrt(v / maxViews) * 100)) : 0,
+      };
+    })
     .sort((a, b) => b.views - a.views);
 
   const payload = {
@@ -162,8 +171,8 @@ export async function GET(req: Request) {
     debug: {
       window: `${startStr}-${endStr}`,
       count: teams.length,
-      failed: results.filter(r => r.views === null).map(r => r.name),
-      sources: results.map(r => ({ es: teamES(r.name), canonical: r.canonical, views: r.views })),
+      failed: results.filter(r => r.viewsEN === null && r.viewsNative === null).map(r => r.name),
+      sources: results.map(r => ({ es: teamES(r.name), lang: r.lang, canonical: r.canonical, nativeTitle: r.nativeTitle, viewsEN: r.viewsEN, viewsNative: r.viewsNative })),
     },
   };
   await cacheSet(HEAT_CACHE_KEY, { teams, updatedAt: Date.now() }, HEAT_CACHE_TTL);

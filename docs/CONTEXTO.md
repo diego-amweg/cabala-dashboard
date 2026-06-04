@@ -14,7 +14,7 @@ Cábala = dashboard editorial del Mundial 2026. Norte (ADR 38): el pulso emocion
 
 ## estado por módulo
 - **header / pulso global**: real vía Wikipedia (/api/pulse, atención mundial 6 idiomas, 0-100 + tendencia + serie, cache 6h). ADR 38. FAKE pendiente: el header simula Mundial en curso (partido actual/próximo, día, cronómetro) — placeholder hasta el arranque.
-- **termómetro mundial** (corazón / paso 2): REAL, a 48. Mide atención (no cariño) vía Wikipedia, declarado honestamente. /api/heat deriva las 48 de football-data (escudo + tla), resuelve el título canónico en en.wikipedia (sigue redirects) + overrides "soccer/men's" para casos especiales, mide pageviews EN, heat 0-100 sqrt. Concurrencia limitada (5) + retry ante hipo de red. Robustez stale-on-error. Thermometer.tsx: treemap squarified (área ∝ calor) + latido por calor (respeta prefers-reduced-motion) + escudos de football-data + toggle "mi tribu"/"las 48". ADR 40 (v1, 12) + ADR 41 (escalado a 48). Medido EN INGLÉS — el nativo está pendiente.
+- **termómetro mundial** (corazón / paso 2): REAL, a 48. Mide atención (no cariño) vía Wikipedia, declarado honestamente. /api/heat deriva las 48 de football-data (escudo + tla), resuelve el título canónico en en.wikipedia (sigue redirects) + overrides "soccer/men's" para casos especiales, mide pageviews EN, heat 0-100 sqrt. Concurrencia limitada (5) + retry ante hipo de red. Robustez stale-on-error. Thermometer.tsx: treemap squarified (área ∝ calor) + latido por calor (respeta prefers-reduced-motion) + escudos de football-data + toggle "mi tribu"/"las 48". ADR 40 (v1, 12) + ADR 41 (a 48) + ADR 42 (idioma nativo). Mide en inglés + idioma nativo de cada país (langlinks de Wikipedia, vistas sumadas); podio menos anglocéntrico.
 - **calendario** (/api/fixtures) y **fase de grupos** (/api/standings): reales desde football-data. 12 grupos, 48 equipos derivados de los partidos, posiciones que se llenan durante el torneo. Robustez stale-on-error + reintentos en el front. ADRs 36, 37, 39. Pendiente: resultados en vivo, bracket (cuando football-data cargue ~27 jun).
 - **memes/peleas** (Bluesky): real. Hashtags reales como query, filtro keep/reject con Haiku, feed cacheado en Redis TTL 15min. ADR 35. Pendiente: evitar re-clasificar en frío (gasto de saldo).
 - **gifs del Mundial**: real (Giphy, por tribu, mp4 lazy). ADRs 31, 32.
@@ -28,10 +28,9 @@ Cábala = dashboard editorial del Mundial 2026. Norte (ADR 38): el pulso emocion
 - mapa de sedes: intensidad random.
 
 ## pendientes en orden
-1. Termómetro: sumar idioma nativo (modo b = inglés + nativo) como sprint corto dedicado. Wikidata = solución definitiva de títulos si se quiere cero fragilidad.
-2. Ganchos del corazón: "hacelo tuyo" (CTA elegí selección, localStorage, sin login), "relato del día" (LLM), "cábalas" (curadas → UGC con alias auto + login OPCIONAL, moderación Haiku).
-3. Mapa de pulso local de las sedes (gente/eventos alrededor de estadios; difícil, sin API obvia).
-4. Arranque Mundial (11 jun): resultados en vivo (ticker+calendario con marcadores, bajar TTL en días de partido), bracket (FixtureBracket). Arquitectura pull+cache on-demand (NO cron/GitHub Actions).
+1. Ganchos del corazón: "hacelo tuyo" (CTA elegí selección, localStorage, sin login), "relato del día" (LLM), "cábalas" (curadas → UGC con alias auto + login OPCIONAL, moderación Haiku).
+2. Mapa de pulso local de las sedes (gente/eventos alrededor de estadios; difícil, sin API obvia).
+3. Arranque Mundial (11 jun): resultados en vivo (ticker+calendario con marcadores, bajar TTL en días de partido), bracket (FixtureBracket). Arquitectura pull+cache on-demand (NO cron/GitHub Actions).
 
 ## backlog técnico
 - Upstash free tier (500k cmd/mes) a vigilar.

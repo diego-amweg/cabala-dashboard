@@ -24,3 +24,20 @@ export const TEAM_ES: Record<string, string> = {
 export function teamES(name: string): string {
   return TEAM_ES[name] ?? name;
 }
+
+// idioma nativo de cada selección, para medir atención también en su propia wikipedia (no solo en inglés).
+// las claves son los nombres de football-data. los anglófonos se omiten: su atención ya se mide en EN.
+export const NATIVE_LANG: Record<string, string> = {
+  Argentina: 'es', Uruguay: 'es', Paraguay: 'es', Colombia: 'es', Ecuador: 'es', Mexico: 'es', Spain: 'es', Panama: 'es',
+  Brazil: 'pt', Portugal: 'pt', 'Cape Verde Islands': 'pt',
+  Morocco: 'ar', Egypt: 'ar', Algeria: 'ar', Tunisia: 'ar', 'Saudi Arabia': 'ar', Jordan: 'ar', Iraq: 'ar', Qatar: 'ar',
+  France: 'fr', Senegal: 'fr', 'Ivory Coast': 'fr', 'Congo DR': 'fr', Haiti: 'fr',
+  Germany: 'de', Austria: 'de', Switzerland: 'de',
+  Netherlands: 'nl', Belgium: 'nl', 'Curaçao': 'nl',
+  Japan: 'ja', 'South Korea': 'ko', Iran: 'fa', Croatia: 'hr', Turkey: 'tr',
+  Norway: 'no', Sweden: 'sv', Czechia: 'cs', 'Bosnia-Herzegovina': 'bs', Uzbekistan: 'uz',
+};
+
+export function nativeLang(name: string): string | null {
+  return NATIVE_LANG[name] ?? null;
+}
