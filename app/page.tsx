@@ -34,7 +34,7 @@ const TRIBE: { code: string; name: string }[] = [
   { code: 'JPN', name: 'Japón' },
 ];
 
-interface TeamHeat { code: string; name: string; views: number; heat: number; }
+interface TeamHeat { code: string; name: string; crest: string | null; views: number; heat: number; }
 
 interface FeedItem { tag: 'meme' | 'polémica' | 'pelea' | 'viral' | 'noticia'; text: string; when: string; score?: number; url?: string; author?: string; query?: string; relevance?: number; imageUrl?: string; }
 interface CalleItem { city: string; text: string; when?: string; }
