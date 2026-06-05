@@ -10,3 +10,9 @@ Notas:
 - Color de memes es best-effort: bluesky:feed vive 15min, journey 6h; cuando el relato se genera el de memes suele estar frío. Aceptado (no meter latencia al relato por una frutilla).
 
 Próximo: "cábalas" curadas (gancho 3); UGC como sesión aparte.
+
+## Enmienda (mismo día): memes fuera del relato
+Con el cache de memes caliente, el color de memes filtró afirmaciones del feed (Geoff Hurst "mirando desde la tribuna" — inventado; David Raya, Newark). El feed son afirmaciones, no clima; la regla "no es hecho" no alcanzó. Se sacó memes del prompt (queda en debug), quedó solo journey, y se endureció la regla de color. Aprendizaje: contenido de terceros como "color" es seguro solo si ya es genérico (títulos de vlogs); un feed de noticias/memes mete afirmaciones.
+
+## Enmienda (mismo día): memes fuera del relato
+Con el cache de memes caliente, el color de memes filtró afirmaciones del feed (Geoff Hurst "mirando desde la tribuna" — inventado; David Raya, Newark). El feed son afirmaciones, no clima; la regla "no es hecho" no alcanzó. Se sacó memes del prompt (queda en debug), quedó solo journey, y se endureció la regla de color. Aprendizaje: contenido de terceros como "color" es seguro solo si ya es genérico (títulos de vlogs); un feed de noticias/memes mete afirmaciones.

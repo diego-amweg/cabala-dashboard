@@ -21,7 +21,7 @@ Cábala = dashboard editorial del Mundial 2026. Norte (ADR 38): el pulso emocion
 - **el camino en video / BTS**: piloto Argentina hardcodeado; road con Haiku (cacheado 24h). ADRs 29, 30, 33. Pendiente: escalar BTS al resto (4d-3e abierto), BTS live (sprint 8).
 - **capa inmersiva**: covers + agrupación por accesibilidad. ADR 28.
 - **hacelo tuyo** (gancho del corazón): elegí tu selección (modal de las 48, TeamPicker.tsx), guardada en localStorage sin login; el header muestra tu equipo + su calor y queda con halo naranja en el termómetro. ADR 43. Frontend puro.
-- **relato del día** (gancho del corazón): bajada editorial bajo el header (RelatoDelDia.tsx), generada por Haiku (/api/relato) a partir de datos reales (pulso + termómetro + próximos partidos + color de memes/journey como ambiente), prompt anti-invento reforzado (sin efemérides ni datos no provistos; termómetro declarado mundial), cache 20h, autodiagnóstico. ADR 44 + 45. Color de memes best-effort (cache 15min, suele estar frío); journey confiable (6h).
+- **relato del día** (gancho del corazón): bajada editorial bajo el header (RelatoDelDia.tsx), generada por Haiku (/api/relato) a partir de datos reales (pulso + termómetro + próximos partidos + color de viaje del hincha como ambiente), prompt anti-invento reforzado (sin efemérides ni datos no provistos; termómetro declarado mundial; prohibido tomar nombres/afirmaciones del color), cache 20h, autodiagnóstico. ADR 44 + 45 (enmienda: memes fuera del prompt por filtrar afirmaciones; quedan en debug). journey confiable (6h).
 - **ticker "en las calles"**: control por drag/teclado/hover, sin botones (decisión).
 - **mapa de sedes**: FAKE (intensidad random).
 

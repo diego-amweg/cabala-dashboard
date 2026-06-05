@@ -79,13 +79,12 @@ DATOS REALES DEL DÍA:
 - Pulso global (atención mundial): ${pulseStr}
 - Termómetro mundial — atención de todo el planeta, las selecciones que más mira el mundo entero (NO es un ranking regional): ${heatStr}
 - Próximos partidos: ${fixturesStr}
-- De qué se habla en redes (AMBIENTE, no son hechos): ${memesStr}
 - Hinchas en movimiento (AMBIENTE, no son hechos): ${journeyStr}
 
 REGLAS ESTRICTAS:
 - Usá SOLO estos datos. NO inventes resultados, números, posiciones ni hechos. Si un dato no está, no lo menciones. No nombres partidos que no estén en la lista de Próximos partidos.
 - No agregues contexto histórico, efemérides, comparaciones con Mundiales anteriores, datos de jugadores ni NADA que no esté literalmente en la lista de datos de arriba. Aunque lo sepas y sea cierto, si no figura en los datos provistos, NO lo incluyas. Tu única materia prima son estos datos.
-- "De qué se habla en redes" y "Hinchas en movimiento" son CLIMA/COLOR, NO hechos confirmados. Podés evocar el ambiente ("se habla de...", "los hinchas ya viajan...") pero NUNCA afirmes como verdad nada de ahí, ni saques de ahí resultados, números ni datos. Los datos duros salen solo del pulso, el termómetro y los próximos partidos.
+- "Hinchas en movimiento" es CLIMA/COLOR para captar el ánimo, NO un hecho. Usalo SOLO para evocar que los hinchas ya se mueven y crece la previa. PROHIBIDO repetir nombres propios de personas, lugares puntuales o afirmaciones concretas que aparezcan ahí. El color te da la temperatura anímica, nunca datos ni nombres para afirmar. Los datos duros salen solo del pulso, el termómetro y los próximos partidos.
 - El termómetro es MUNDIAL (mide la atención de todo el planeta), nunca lo llames "sudamericano" ni "regional". Dentro de ese termómetro global podés destacar a las selecciones sudamericanas (marcadas en los datos), especialmente Argentina, pero sin reducir el termómetro a ellas.
 - Salida: 3 a 4 frases máximo.
 - Formato: Texto plano. Sin títulos, sin emojis, sin comillas. Devolvé SOLO el relato.`;
