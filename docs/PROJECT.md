@@ -379,3 +379,17 @@ Decisión: el endpoint /api/relato lee de Redis los datos REALES ya cacheados (p
 Proceso: segunda tarea con Antigravity. Acertó keys/shapes (leyó los route.ts) y el relato salió con las 3 fuentes. En la revisión de diff se cazó el uso de `any` (atajo que viola TS estricto) y se corrigió a tipos concretos, más el autodiagnóstico que faltaba. El flujo controlado (revisar el diff antes de commitear) hizo su trabajo. v1 sin color de memes/journey (pasada siguiente).
 
 Consecuencias: la primera línea del dashboard es una lectura editorial real del día. Pendiente: sumar color de memes/journey al relato; "cábalas" (curadas; UGC aparte).
+
+## ADR 45 — Color al relato (memes + viaje del hincha) y refuerzo anti-invento
+
+Contexto: extensión de ADR 44. Se sumó al relato el color de dos fuentes vivas: memes (Bluesky, key bluesky:feed) y viaje del hincha (key journey:all), como AMBIENTE, no como hecho.
+
+Decisión:
+- El relato lee bluesky:feed y journey:all de Redis y los pasa a Haiku como "clima" (de qué se habla / hinchas en movimiento), con regla explícita: son color, NO hechos; prohibido sacar de ahí resultados, números o datos.
+- Color de memes best-effort: el feed de Bluesky se cachea 15 min (TTL del módulo de memes) y journey vive 6h. Cuando el relato se genera (cache 20h) el feed de memes suele estar frío, así que memes entra solo si el cache está caliente; journey entra casi siempre. No se le mete fetch interno al relato (serían ~10s de Haiku) por una frutilla. Si no hay dato, la regla "si no está, no lo menciones" lo cubre.
+- Refuerzo anti-invento: se detectó que Haiku agregaba efemérides ciertas pero NO provistas (ej. "México vs Sudáfrica, el mismo partido que marcó el 2010"). Aunque sea cierto, viola el principio de "solo datos provistos" y mañana podría afirmar algo falso igual. Regla nueva: prohibido contexto histórico, efemérides, comparaciones con Mundiales anteriores o datos de jugadores que no estén literalmente en los datos.
+- Termómetro global: Haiku lo llamaba "sudamericano" cuando es mundial. Se aclaró el label del dato y se agregó regla de que el termómetro es mundial; las sudamericanas se destacan dentro, pero no lo reducen.
+
+Proceso: tercera tarea con Antigravity. Acertó keys/shapes (bluesky:feed y journey:all, verificadas contra los route.ts) y no metió any. En revisión se cazaron dos cosas del PROMPT (no de Antigravity): el invento de la efeméride y la imprecisión del termómetro; ambos corregidos.
+
+Consecuencias: el relato gana calle (clima de redes y viajeros) sin perder rigor.
