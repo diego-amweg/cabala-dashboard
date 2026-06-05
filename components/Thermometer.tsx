@@ -56,7 +56,7 @@ function squarify(teams: TeamHeat[], W: number, H: number): Rect[] {
 
 const GAP = 4;
 
-export default function Thermometer({ teams, tribeNames }: { teams: TeamHeat[]; tribeNames: string[] }) {
+export default function Thermometer({ teams, tribeNames, highlightName }: { teams: TeamHeat[]; tribeNames: string[]; highlightName?: string | null }) {
   const [showAll, setShowAll] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
@@ -97,8 +97,9 @@ export default function Thermometer({ teams, tribeNames }: { teams: TeamHeat[]; 
           const showCode = small > 30;
           const dur = (4.4 - (r.team.heat / 100) * 2.2).toFixed(2);
           const delay = ((idx % 6) * 0.19).toFixed(2);
+          const isHighlighted = r.team.name === highlightName;
           return (
-            <div key={r.team.code} title={`${r.team.name} · ${r.team.views.toLocaleString('es-AR')} vistas en Wikipedia`} className="absolute flex flex-col items-center justify-center overflow-hidden rounded-md" style={{ left: r.x + GAP / 2, top: r.y + GAP / 2, width: Math.max(0, r.w - GAP), height: Math.max(0, r.h - GAP), backgroundColor: c.bg, color: c.fg }}>
+            <div key={r.team.code} title={`${r.team.name} · ${r.team.views.toLocaleString('es-AR')} vistas en Wikipedia`} className="absolute flex flex-col items-center justify-center overflow-hidden rounded-md" style={{ left: r.x + GAP / 2, top: r.y + GAP / 2, width: Math.max(0, r.w - GAP), height: Math.max(0, r.h - GAP), backgroundColor: c.bg, color: c.fg, boxShadow: isHighlighted ? '0 0 0 3px #f97316, 0 0 14px 3px rgba(249,115,22,0.55)' : undefined, zIndex: isHighlighted ? 20 : undefined }}>
               <div className="thermo-beat flex flex-col items-center justify-center" style={{ animation: `thermo-breathe ${dur}s ease-in-out ${delay}s infinite`, transformOrigin: 'center' }}>
                 {showCrest && <img src={r.team.crest!} alt="" loading="lazy" className="object-contain" style={{ width: crestSize, height: crestSize }} />}
                 {showCode && <span className="mt-0.5 font-medium tracking-wider" style={{ fontSize: codeSize }}>{r.team.code}</span>}

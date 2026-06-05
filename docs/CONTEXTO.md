@@ -20,6 +20,7 @@ Cábala = dashboard editorial del Mundial 2026. Norte (ADR 38): el pulso emocion
 - **gifs del Mundial**: real (Giphy, por tribu, mp4 lazy). ADRs 31, 32.
 - **el camino en video / BTS**: piloto Argentina hardcodeado; road con Haiku (cacheado 24h). ADRs 29, 30, 33. Pendiente: escalar BTS al resto (4d-3e abierto), BTS live (sprint 8).
 - **capa inmersiva**: covers + agrupación por accesibilidad. ADR 28.
+- **hacelo tuyo** (gancho del corazón): elegí tu selección (modal de las 48, TeamPicker.tsx), guardada en localStorage sin login; el header muestra tu equipo + su calor y queda con halo naranja en el termómetro. ADR 43. Frontend puro.
 - **ticker "en las calles"**: control por drag/teclado/hover, sin botones (decisión).
 - **mapa de sedes**: FAKE (intensidad random).
 
@@ -28,7 +29,7 @@ Cábala = dashboard editorial del Mundial 2026. Norte (ADR 38): el pulso emocion
 - mapa de sedes: intensidad random.
 
 ## pendientes en orden
-1. Ganchos del corazón: "hacelo tuyo" (CTA elegí selección, localStorage, sin login), "relato del día" (LLM), "cábalas" (curadas → UGC con alias auto + login OPCIONAL, moderación Haiku).
+1. Ganchos del corazón: "hacelo tuyo" HECHO (ADR 43). Falta: "relato del día" (LLM); "cábalas" (curadas primero; el UGC es salto aparte = primera DB + login opcional + moderación Haiku, se discute solo).
 2. Mapa de pulso local de las sedes (gente/eventos alrededor de estadios; difícil, sin API obvia).
 3. Arranque Mundial (11 jun): resultados en vivo (ticker+calendario con marcadores, bajar TTL en días de partido), bracket (FixtureBracket). Arquitectura pull+cache on-demand (NO cron/GitHub Actions).
 

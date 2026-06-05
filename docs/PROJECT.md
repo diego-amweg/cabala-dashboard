@@ -359,3 +359,13 @@ Contexto: a días del Mundial y con backlog grande, se busca velocidad. El ADR 2
 Decisión: división de trabajo. Claude (chat) sigue de arquitecto/diseño/producto y escribe specs estrictas (formato anti-alucinación, anclando el stack real: Anthropic/football-data/Wikipedia/Bluesky, NO el stack Google de Antigravity). Antigravity ejecuta tareas ACOTADAS y cierra cada una con npx tsc --noEmit (y npm run build cuando toca). Diego revisa el diff antes de commitear. Tareas chicas y verificables, no "construí el módulo entero". Si Antigravity sugiere cambiar de proveedor de IA o sumar Genkit/Gemini, se frena.
 
 Consecuencias: más velocidad sin perder el control que motivó el ADR 27 original. El riesgo de errores silenciosos del agente se mitiga con verificación obligatoria + revisión de diff + acotamiento.
+
+## ADR 43 — Gancho "hacelo tuyo" (elegí tu selección, sin login)
+
+Contexto: primer gancho del corazón. El dashboard era genérico para todos; "hacelo tuyo" lo personaliza sin romper el principio sin-login.
+
+Decisión: el usuario elige UNA selección de las 48 desde un selector modal (components/TeamPicker.tsx, buscable). Se guarda en localStorage (key 'cabala:miSeleccion'), se restaura al volver, leído solo en useEffect para no romper la hidratación SSR. El header muestra la selección con su calor del termómetro; la selección queda resaltada con un halo naranja en el treemap (prop highlightName en Thermometer). Frontend puro: sin backend, sin IA, sin dependencias nuevas.
+
+Proceso: primera tarea ejecutada con Antigravity bajo el flujo controlado (enmienda ADR 27): Claude escribió la spec estricta, Antigravity creó/editó los archivos y verificó con tsc --noEmit + npm run build, Claude revisó el diff antes del commit. Resultado limpio (sin any, sin deps, JSX en una línea, prefers-reduced-motion respetado).
+
+Consecuencias: el dashboard se siente propio. Pendiente del corazón: "relato del día" (LLM) y "cábalas" (curadas; UGC como decisión aparte).

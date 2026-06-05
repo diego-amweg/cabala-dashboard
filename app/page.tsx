@@ -13,6 +13,7 @@ import StadiumModal from '@/components/StadiumModal';
 import Ticker from '@/components/Ticker';
 import TeamBadge from '@/components/TeamBadge';
 import Thermometer from '@/components/Thermometer';
+import TeamPicker from '@/components/TeamPicker';
 import { MAP_VIEWBOX, COUNTRY_PATHS, STATE_PATHS, CITIES } from '@/data/mapData';
 
 const CURRENT_MATCH = 'octavos · México 1-1 Países Bajos · MetLife';
@@ -69,6 +70,8 @@ export default function CabalaDashboard() {
   const [pulseTrend, setPulseTrend] = useState<number | null>(null);
   const [liveSec, setLiveSec] = useState(60);
   const [heat, setHeat] = useState<TeamHeat[]>([]);
+  const [myTeam, setMyTeam] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [intensity, setIntensity] = useState<Record<string, number>>({});
 
   // Init aleatorio en cliente para evitar mismatch de hidratación (SSR vs CSR con Math.random)
@@ -97,6 +100,17 @@ export default function CabalaDashboard() {
       .catch(() => { });
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('cabala:miSeleccion');
+    if (saved) setMyTeam(saved);
+  }, []);
+
+  const handlePick = (name: string) => {
+    localStorage.setItem('cabala:miSeleccion', name);
+    setMyTeam(name);
+    setPickerOpen(false);
+  };
 
   const [memes, setMemes] = useState<FeedItem[]>([]);
   const [memesLoading, setMemesLoading] = useState(true);
@@ -202,7 +216,19 @@ export default function CabalaDashboard() {
             <p className="mt-1 text-sm text-stone-500">la superstición se hizo software</p>
           </div>
           <div className="flex flex-col items-start gap-2 sm:items-end">
-            <button onClick={shareCabala} className="inline-flex items-center gap-1.5 rounded-md border border-orange-300 bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-900 transition-colors hover:bg-orange-100"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>{shared ? 'copiado' : 'compartir'}</button>
+            <div className="flex items-center gap-2">
+              {myTeam === null ? (
+                <button onClick={() => setPickerOpen(true)} className="rounded-md border border-stone-300 bg-white px-2.5 py-1 text-xs text-stone-600 transition-colors hover:bg-stone-50">elegí tu selección</button>
+              ) : (
+                <div className="flex items-center gap-1.5 rounded-md border border-stone-200 bg-white px-2.5 py-1 text-xs text-stone-700">
+                  {heat.find(t => t.name === myTeam)?.crest && <img src={heat.find(t => t.name === myTeam)!.crest!} alt="" className="h-3 w-3 object-contain" />}
+                  <span className="font-medium">{myTeam}</span>
+                  {heat.find(t => t.name === myTeam)?.heat !== undefined && <span className="text-stone-400">· calor {heat.find(t => t.name === myTeam)!.heat}</span>}
+                  <button onClick={() => setPickerOpen(true)} className="ml-1 text-[10px] text-stone-400 underline hover:text-stone-600">cambiar</button>
+                </div>
+              )}
+              <button onClick={shareCabala} className="inline-flex items-center gap-1.5 rounded-md border border-orange-300 bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-900 transition-colors hover:bg-orange-100"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>{shared ? 'copiado' : 'compartir'}</button>
+            </div>
             <div className="font-mono text-xs text-stone-500">día 12 · jue 25 jun · 18:42 ART</div>
             <div className="flex items-center gap-2.5 rounded-md bg-stone-100 px-3 py-1.5">
               <span className="text-[10px] uppercase tracking-wider text-stone-500">pulso global</span>
@@ -307,7 +333,7 @@ export default function CabalaDashboard() {
               {heat.length === 0 ? (
                 <p className="px-2 text-xs text-stone-400">midiendo el calor del mundo…</p>
               ) : (
-                <Thermometer teams={heat} tribeNames={TRIBE.filter(t => tribe.has(t.code)).map(t => t.name)} />
+                <Thermometer teams={heat} tribeNames={TRIBE.filter(t => tribe.has(t.code)).map(t => t.name)} highlightName={myTeam} />
               )}
             </div>
           </section>
@@ -389,6 +415,7 @@ export default function CabalaDashboard() {
       </div>
       <Chat context={{ memes, tribe: tribeArray, activeMods: Array.from(activeMods) }} />
       <StadiumModal cityId={selectedStadium} onClose={() => setSelectedStadium(null)} />
+      {pickerOpen && <TeamPicker teams={heat} onPick={handlePick} onClose={() => setPickerOpen(false)} />}
     </main>
   );
 }
