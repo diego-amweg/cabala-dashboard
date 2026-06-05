@@ -369,3 +369,13 @@ Decisión: el usuario elige UNA selección de las 48 desde un selector modal (co
 Proceso: primera tarea ejecutada con Antigravity bajo el flujo controlado (enmienda ADR 27): Claude escribió la spec estricta, Antigravity creó/editó los archivos y verificó con tsc --noEmit + npm run build, Claude revisó el diff antes del commit. Resultado limpio (sin any, sin deps, JSX en una línea, prefers-reduced-motion respetado).
 
 Consecuencias: el dashboard se siente propio. Pendiente del corazón: "relato del día" (LLM) y "cábalas" (curadas; UGC como decisión aparte).
+
+## ADR 44 — Gancho "relato del día" (bajada editorial generada por IA)
+
+Contexto: segundo gancho del corazón. Una bajada editorial corta, voz Cábala, que pone en palabras el pulso del día, arriba del todo.
+
+Decisión: el endpoint /api/relato lee de Redis los datos REALES ya cacheados (pulse:global, heat:teams, fixtures:groups), arma un resumen y lo manda a Haiku (claude-haiku-4-5-20251001, mismo patrón que road) con un prompt anti-invento (usa solo lo provisto; prohibido inventar resultados/números/partidos). Cachea en relato:dia con stale-on-error (TTL 7d + maxAge 20h ~ diario), soporta ?refresh, autodiagnóstico (debug con los datos que entraron). Componente RelatoDelDia.tsx lo muestra bajo el header, discreto, sin mensajes técnicos ante error. Solo fuentes reales: las fake (mapa de sedes, en las calles, partido simulado del header) quedan afuera hasta tener dato real; el relato suma fuentes a medida que se vuelven reales.
+
+Proceso: segunda tarea con Antigravity. Acertó keys/shapes (leyó los route.ts) y el relato salió con las 3 fuentes. En la revisión de diff se cazó el uso de `any` (atajo que viola TS estricto) y se corrigió a tipos concretos, más el autodiagnóstico que faltaba. El flujo controlado (revisar el diff antes de commitear) hizo su trabajo. v1 sin color de memes/journey (pasada siguiente).
+
+Consecuencias: la primera línea del dashboard es una lectura editorial real del día. Pendiente: sumar color de memes/journey al relato; "cábalas" (curadas; UGC aparte).

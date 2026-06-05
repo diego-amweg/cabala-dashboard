@@ -14,6 +14,7 @@ import Ticker from '@/components/Ticker';
 import TeamBadge from '@/components/TeamBadge';
 import Thermometer from '@/components/Thermometer';
 import TeamPicker from '@/components/TeamPicker';
+import RelatoDelDia from '@/components/RelatoDelDia';
 import { MAP_VIEWBOX, COUNTRY_PATHS, STATE_PATHS, CITIES } from '@/data/mapData';
 
 const CURRENT_MATCH = 'octavos · México 1-1 Países Bajos · MetLife';
@@ -240,6 +241,8 @@ export default function CabalaDashboard() {
             </div>
           </div>
         </header>
+
+        <RelatoDelDia />
 
         <div className="mt-4 flex items-center gap-3 rounded-md bg-stone-100 px-4 py-3 text-sm">
           <span className="inline-flex items-center gap-1.5 rounded bg-orange-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-orange-900">
