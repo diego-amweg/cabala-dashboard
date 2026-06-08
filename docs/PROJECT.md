@@ -399,3 +399,16 @@ En las primeras corridas con el cache de memes caliente, el color de memes filtr
 
 ### Enmienda ADR 45 (mismo día) — memes fuera del relato
 En las primeras corridas con el cache de memes caliente, el color de memes filtró afirmaciones del feed al relato (ej. "Geoff Hurst mirando desde la tribuna", inventado a partir de un post; también David Raya, Newark). El feed de Bluesky no es "clima" sino posts con afirmaciones y noticias, y la regla "color no es hecho" no frena que Haiku tome un nombre jugoso y lo afirme. Decisión: sacar memes del prompt del relato y dejar solo "viaje del hincha" (journey), cuyos títulos de vlogs evocan ambiente sin afirmar. memesStr queda en el debug (informativo), fuera del prompt. La regla de color se endureció: prohibido repetir nombres propios o afirmaciones del color. Aprendizaje: pasar contenido de terceros a un LLM como "color" es seguro solo si ese contenido ya es genérico (títulos de vlogs); un feed de noticias/memes mete afirmaciones aunque le pidas que sea ambiente.
+
+## ADR 46 — Gancho "cábalas" (folklore del hincha, curado)
+
+Contexto: tercer gancho del corazón. El producto se llama Cábala pero la superstición no estaba en ningún lado; las cábalas (rituales del hincha) son el contenido más de marca.
+
+Decisión:
+- Colección curada y hardcodeada en data/cabalas.ts (20: 15 universales + 5 de hinchada — Uruguay, Brasil x2, México, Japón). Regla editorial: solo folklore colectivo/cultural, NADA atribuido a jugadores ni DTs reales (figuras reales + datos a verificar + diluyen la voz). Las anécdotas de individuos que aparecen en la web se reconvierten en folklore genérico o se descartan.
+- Componente Cabalas.tsx (frontend puro, sin backend/IA): variant 'dia' (la cábala del día, rotada determinísticamente por fecha, fija arriba junto al relato, siempre visible) y variant 'coleccion' (la colección completa, en módulo toggleable). "mi cábala" en localStorage (cabala:miCabala), resaltada, mismo patrón que "hacelo tuyo".
+- Crecimiento CURADO, no automático: se descartó la búsqueda diaria automática de cábalas (mismo riesgo que los memes en el relato: contenido de terceros sin verificar, jugadores reales, ruido SEO de apuestas; además el folklore no se renueva a diario y requeriría un cron, que no usamos). La colección crece cuando Claude busca y propone en sesión y Diego valida. La rotación diaria ya da la sensación de "vivo" sin riesgo.
+
+Proceso: cuarta tarea con Antigravity. Construyó componente e integración respetando casi todo (sin any, localStorage en useEffect, JSX en una línea, patrón de toggles, reduced-motion). En revisión se cazó una violación de las reglas de hooks (useState/useEffect después de un early return condicional por variant) que ni tsc ni next build detectan; corregido dividiendo en dos subcomponentes (CabalaDelDia sin hooks, CabalasColeccion con hooks) con un dispatcher. Aprendizaje: tsc chequea tipos y el build no corre react-hooks/rules-of-hooks por defecto; las reglas de hooks las caza la revisión humana.
+
+Consecuencias: el nombre del producto por fin tiene su gancho. Pendiente: crecimiento curado durante el Mundial; eventual "mi cábala" visible arriba (requiere levantar estado a page.tsx); UGC de cábalas como salto aparte (DB + login opcional + moderación).

@@ -22,6 +22,7 @@ Cábala = dashboard editorial del Mundial 2026. Norte (ADR 38): el pulso emocion
 - **capa inmersiva**: covers + agrupación por accesibilidad. ADR 28.
 - **hacelo tuyo** (gancho del corazón): elegí tu selección (modal de las 48, TeamPicker.tsx), guardada en localStorage sin login; el header muestra tu equipo + su calor y queda con halo naranja en el termómetro. ADR 43. Frontend puro.
 - **relato del día** (gancho del corazón): bajada editorial bajo el header (RelatoDelDia.tsx), generada por Haiku (/api/relato) a partir de datos reales (pulso + termómetro + próximos partidos + color de viaje del hincha como ambiente), prompt anti-invento reforzado (sin efemérides ni datos no provistos; termómetro declarado mundial; prohibido tomar nombres/afirmaciones del color), cache 20h, autodiagnóstico. ADR 44 + 45 (enmienda: memes fuera del prompt por filtrar afirmaciones; quedan en debug). journey confiable (6h).
+- **cábalas** (gancho del corazón): folklore del hincha curado (data/cabalas.ts, 20 entradas, solo colectivo/cultural, sin jugadores reales). Cabalas.tsx: "la cábala del día" rotada por fecha fija arriba + colección en módulo toggleable + "mi cábala" en localStorage. Frontend puro. ADR 46. Crecimiento curado (Claude propone, Diego valida), NO búsqueda automática.
 - **ticker "en las calles"**: control por drag/teclado/hover, sin botones (decisión).
 - **mapa de sedes**: FAKE (intensidad random).
 
@@ -30,7 +31,7 @@ Cábala = dashboard editorial del Mundial 2026. Norte (ADR 38): el pulso emocion
 - mapa de sedes: intensidad random.
 
 ## pendientes en orden
-1. Ganchos del corazón: "hacelo tuyo" HECHO (ADR 43), "relato del día" HECHO con color de memes/journey (ADR 44 + 45). Falta: "cábalas" (curadas primero; el UGC es salto aparte = primera DB + login opcional + moderación Haiku, se discute solo).
+1. Ganchos del corazón: "hacelo tuyo" (ADR 43), "relato del día" (ADR 44 + 45) y "cábalas" curadas (ADR 46) HECHOS. Pendiente solo: UGC de cábalas (salto aparte = primera DB + login opcional + moderación Haiku, se discute solo) y crecimiento curado de la colección durante el Mundial.
 2. Mapa de pulso local de las sedes (gente/eventos alrededor de estadios; difícil, sin API obvia).
 3. Arranque Mundial (11 jun): resultados en vivo (ticker+calendario con marcadores, bajar TTL en días de partido), bracket (FixtureBracket). Arquitectura pull+cache on-demand (NO cron/GitHub Actions).
 

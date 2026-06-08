@@ -15,6 +15,7 @@ import TeamBadge from '@/components/TeamBadge';
 import Thermometer from '@/components/Thermometer';
 import TeamPicker from '@/components/TeamPicker';
 import RelatoDelDia from '@/components/RelatoDelDia';
+import Cabalas from '@/components/Cabalas';
 import { MAP_VIEWBOX, COUNTRY_PATHS, STATE_PATHS, CITIES } from '@/data/mapData';
 
 const CURRENT_MATCH = 'octavos · México 1-1 Países Bajos · MetLife';
@@ -63,7 +64,7 @@ const CALLE: CalleItem[] = [
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
 const fmtMin = (sec: number) => `${Math.floor(sec / 60)}' +${(sec % 60) < 10 ? '0' + (sec % 60) : (sec % 60)}''`;
 
-const ALL_MODULES = ['map', 'senti', 'memes', 'calle', 'journey', 'calendar', 'gifs', 'road', 'immersive'] as const;
+const ALL_MODULES = ['map', 'senti', 'memes', 'calle', 'journey', 'calendar', 'gifs', 'road', 'immersive', 'cabalas'] as const;
 type ModuleId = typeof ALL_MODULES[number];
 
 export default function CabalaDashboard() {
@@ -243,6 +244,7 @@ export default function CabalaDashboard() {
         </header>
 
         <RelatoDelDia />
+        <Cabalas variant="dia" />
 
         <div className="mt-4 flex items-center gap-3 rounded-md bg-stone-100 px-4 py-3 text-sm">
           <span className="inline-flex items-center gap-1.5 rounded bg-orange-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-orange-900">
@@ -273,6 +275,7 @@ export default function CabalaDashboard() {
             { id: 'gifs' as const, label: 'gifs' },
             { id: 'road' as const, label: 'camino al mundial' },
             { id: 'immersive' as const, label: 'inmersivo' },
+            { id: 'cabalas' as const, label: 'cábalas' },
           ].map(m => {
             const on = activeMods.has(m.id);
             return (
@@ -409,6 +412,16 @@ export default function CabalaDashboard() {
               <span className="text-[10px] text-stone-400">cómo vivir el partido</span>
             </div>
             <ImmersiveLayer match={CURRENT_MATCH} />
+          </section>
+        )}
+
+        {activeMods.has('cabalas') && (
+          <section className="mt-3">
+            <div className="mb-1.5 flex items-baseline justify-between">
+              <h2 className="text-xs font-medium tracking-wide text-stone-700">cábalas</h2>
+              <span className="text-[10px] text-stone-400">folklore del hincha</span>
+            </div>
+            <Cabalas variant="coleccion" />
           </section>
         )}
 
