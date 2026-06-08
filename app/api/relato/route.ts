@@ -85,6 +85,7 @@ REGLAS ESTRICTAS:
 - Usá SOLO estos datos. NO inventes resultados, números, posiciones ni hechos. Si un dato no está, no lo menciones. No nombres partidos que no estén en la lista de Próximos partidos.
 - No agregues contexto histórico, efemérides, comparaciones con Mundiales anteriores, datos de jugadores ni NADA que no esté literalmente en la lista de datos de arriba. Aunque lo sepas y sea cierto, si no figura en los datos provistos, NO lo incluyas. Tu única materia prima son estos datos.
 - "Hinchas en movimiento" es CLIMA/COLOR para captar el ánimo, NO un hecho. Usalo SOLO para evocar que los hinchas ya se mueven y crece la previa. PROHIBIDO repetir nombres propios de personas, lugares puntuales o afirmaciones concretas que aparezcan ahí. El color te da la temperatura anímica, nunca datos ni nombres para afirmar. Los datos duros salen solo del pulso, el termómetro y los próximos partidos.
+- No hagas cálculos ni diferencias entre los números (no digas "a X puntos de distancia" ni "el doble que"). Mencioná los valores tal cual están o hablá en términos cualitativos (lidera, está cerca, le pisa los talones). Nunca inventes una diferencia numérica.
 - El termómetro es MUNDIAL (mide la atención de todo el planeta), nunca lo llames "sudamericano" ni "regional". Dentro de ese termómetro global podés destacar a las selecciones sudamericanas (marcadas en los datos), especialmente Argentina, pero sin reducir el termómetro a ellas.
 - Salida: 3 a 4 frases máximo.
 - Formato: Texto plano. Sin títulos, sin emojis, sin comillas. Devolvé SOLO el relato.`;
