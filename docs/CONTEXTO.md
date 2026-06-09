@@ -39,7 +39,6 @@ Cábala = dashboard editorial del Mundial 2026. Norte (ADR 38): el pulso emocion
 - npm audit (3 vulns transitivas, sin --force).
 - Licencias de covers/BTS antes del público (bloqueante legal).
 - Mensajes de error técnicos → amigables.
-- Cachear feed de bluesky armado (carga en frío ~10-14s, gasto de Haiku).
 - Road ~15s en frío (Haiku); evaluar precalentar.
 - Dependencia del saldo de Anthropic = riesgo operativo durante el Mundial.
 - Cleanup cosmético Tailwind v4 (Calendar max-h, Road -left).
