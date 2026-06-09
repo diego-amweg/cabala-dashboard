@@ -4,23 +4,22 @@
 
 Plataforma personal para vivir el Mundial 2026 como fenómeno cultural total, no solo como torneo deportivo. Termómetro global configurable, en tiempo real, asistido por IA.
 
-## ⚠ PENDIENTE PARA EL ARRANQUE DEL MUNDIAL (11 jun 2026)
-- Resultados en vivo: el ticker y el calendario tienen que mostrar marcadores reales. El
-  endpoint /api/standings ya calcula puntos de partidos finalizados y el calendario ya mapea
-  scores, así que gran parte se "enciende solo"; falta verificar contra datos reales, bajar el
-  TTL del cache en días de partido y armar el ticker LIVE en page.tsx.
+## ⚠ PENDIENTE PARA EL MUNDIAL (en curso)
+- ✅ Resultados en vivo: resuelto (ADR 47). Header y calendario muestran marcadores reales
+  vía ESPN (/api/live, polling 60s). TTL dinámico en fixtures/standings (5min día de partido).
 - Bracket de eliminatorias (FixtureBracket): las llaves se cargan cuando football-data agregue
   los partidos de Round of 32 en adelante (al cerrarse los grupos, ~27 jun). Conectar el
   componente a los partidos que NO son GROUP_STAGE.
-- REVISAR estos dos apenas empiece el torneo, y de nuevo en la fase de eliminatorias.
+- REVISAR en producción el 11 jun: confirmar que displayClock y scores de ESPN llegan como
+  se espera. Si algún equipo aparece en inglés en el calendar, agregar alias a lib/teams.ts.
 
 ## Estado del proyecto
 
 - **Versión actual**: v0.6 — Sprint 4 completo (módulos faltantes + capa inmersiva)
 - **Sprint completado**: 4c
 - **Próximo sprint**: 5 — datos reales en módulos simulados
-- **Última actualización**: mayo 2026
-- **Días al kickoff**: ~31 (11 de junio de 2026)
+- **Última actualización**: junio 2026
+- **Kickoff**: 11 de junio de 2026 (2 días)
 - **URL del repo**: https://github.com/diego-amweg/cabala-dashboard
 - **URL pública**: https://cabala-dashboard.vercel.app
 - **URL pública con dominio propio**: pendiente Sprint 7
@@ -171,6 +170,10 @@ Estados: `pendiente` → `diseñado` → `vivo (mock)` → `vivo (real)`
 25. **Ticker horizontal continuo en "En las calles"** (Sprint 4d-3c): El feed vertical de 4 tarjetas se reemplaza por un ticker horizontal estilo cable de noticias que itera continuamente sobre los 16 items de la lista CALLE. Implementación: CSS animation (`transform: translateX` de 0 a -50%) sobre los items duplicados en el JSX, 90 segundos por ciclo, pause on hover en desktop. Se elimina el state `calleShown` y su actualización en el `setInterval` de 2.4s. Decisión de diseño: animación CSS por performance (GPU-accelerated, no compite con el setInterval que ya orquesta pulso/sentimiento/intensidad). En mobile no hay pause (no hay hover), aceptable.
 26. **Sprint 4d-3c.1: controles manuales del ticker** (mejora de 4d-3c). El ticker pasa de animación CSS pura a JavaScript con `requestAnimationFrame`, encapsulado en un componente nuevo `components/Ticker.tsx`. Se agregan: pause-on-hover (mantenido), drag con dedo en mobile (toca y arrastra, vuelve a auto-play al soltar), flechas izquierda/derecha del teclado en desktop (cuando el ticker tiene focus, mueve 80px por toque). Decisión: no agregar botones visibles ni atajo de space para mantener el módulo como elemento de fondo, no protagonista. Performance: sigue siendo GPU-accelerated porque solo se modifica `transform`.
 27. **Descartar Claude Code como ejecutor técnico** (Sesión 2, mayo 2026). Decidimos dejar de usar Claude Code en WSL para aplicar cambios y volver a un workflow donde Diego aplica todo manualmente en VS Code local. Razón: control directo sobre cada cambio antes de aplicarlo, menor riesgo de errores silenciosos cuando find/replace falla en strings largos, y mayor entendimiento del estado del repo por parte de Diego. Trade-off aceptado: cambios más lentos de aplicar, pero más confiables. Claude (este chat) ahora entrega: búsqueda/reemplazo surgical, archivos completos cuando el delta es grande, scripts de bash cuando hay varias acciones encadenadas, y bloques de texto para pegar en docs.
+(enmienda) — Antigravity como ejecutor controlado
+Contexto: a días del Mundial y con backlog grande, se busca velocidad. El ADR 27 había descartado Claude Code como ejecutor por control. Se reincorpora un ejecutor agéntico (Antigravity IDE), pero con guardrails que preservan el control.
+Decisión: división de trabajo. Claude (chat) sigue de arquitecto/diseño/producto y escribe specs estrictas (formato anti-alucinación, anclando el stack real: Anthropic/football-data/Wikipedia/Bluesky, NO el stack Google de Antigravity). Antigravity ejecuta tareas ACOTADAS y cierra cada una con npx tsc --noEmit (y npm run build cuando toca). Diego revisa el diff antes de commitear. Tareas chicas y verificables, no "construí el módulo entero". Si Antigravity sugiere cambiar de proveedor de IA o sumar Genkit/Gemini, se frena.
+Consecuencias: más velocidad sin perder el control que motivó el ADR 27 original. El riesgo de errores silenciosos del agente se mitiga con verificación obligatoria + revisión de diff + acotamiento.
 28. **Agrupación por accesibilidad + covers visuales en Capa AR/VR** (Sprint 4d-3d, mayo 2026): el módulo "inmersivo" pasa de grilla plana de 8 opciones a dos grupos visuales con cover image por card. Grupos: "desde tu casa hoy" (4 opciones accesibles sin hardware especial: watch party presencial, FIFA+, Twitch co-streams, YouTube VR con Cardboard) y "con equipo dedicado" (2 opciones que requieren hardware: Bigscreen, Apple Vision Pro). Catálogo pasa de 8 a 6 opciones al sacar Cosm Domes (presencial en LA/Dallas, no aplicable a un usuario en Tostado) y Meta Horizon Worlds (redundante funcionalmente con Bigscreen). Covers son imágenes locales en `public/immersive/{id}.jpg` a 640x360, renderizadas con `next/image` (optimización automática, lazy load). Cada card mantiene su categoría (streaming/social/vr/xr/dome), descripción, dispositivo y costo. Tradeoff: el módulo pasa de tabla informativa densa a tarjetas editoriales con foto — más superficie visual, menos densidad de texto. Enmienda al ADR 15.
 29. **BTS histórico en Camino al Mundial: "el camino en video"** (Sprint 4d-3e): se agrega al módulo road una sección al pie con videos BTS históricos de YouTube oficiales por selección. Enfoque: curaduría hardcodeada en el componente (objeto `TEAM_BTS_VIDEOS` con id de YouTube, título y bajada editorial por video), renderizada como thumbnail (`img.youtube.com/vi/{id}/hqdefault.jpg`) + link que abre el video en YouTube, no embed. Alternativas descartadas: la YouTube Data API (lo dinámico queda reservado para el Sprint 8 de BTS live; el contenido histórico es estático) y los embeds (pesados, peor performance y privacidad). Sin endpoint nuevo, sin key, sin LLM en runtime: la curaduría humana es el filtro editorial. Los IDs los consigue Diego (Claude no puede proveer IDs de YouTube de forma confiable). Piloto deployado solo con Argentina (4 videos: final Qatar 2022, Copa América 2021, vuelta a casa, Copa América 2024). Escalado al resto de selecciones pendiente de decisión.
 30. **Modelo del endpoint road: Sonnet a Haiku** (Sprint 4d-3e): `/api/road/[team]` pasa de `claude-sonnet-4-6` a `claude-haiku-4-5-20251001` para bajar costo y latencia (Sonnet tardaba ~22s por generación). El road solo narra un timeline a partir de los datos provistos en `TEAM_FACTS`, tarea que Haiku resuelve bien; validado regenerando ARG/BRA/JPN con `?refresh=true`. Tradeoff: Haiku es menos potente; si en algún equipo la calidad cae, se ajusta el prompt o se revierte el modelo solo para road. Disparador: la cuenta de Anthropic API se quedó sin créditos, lo que expuso la dependencia del dashboard del saldo de API.
@@ -295,6 +298,48 @@ implementación:
 - componente Thermometer.tsx: treemap squarified (bruls et al.) recalculado al ancho real del contenedor (ResizeObserver, responsive). latido por calor con keyframe css, respeta prefers-reduced-motion.
 bajas: se eliminó el módulo "sufrimiento compartido" (era fake: textos hardcodeados + ansiedad = 100 - sentimiento). se quitó el sentimiento random del header/teams (también fake).
 pendiente: medir en inglés es anglocéntrico (brasil/francia pesan de más; argentina pesaría más con español). para escalar a las 48 o afinar, sumar idiomas por equipo (es/pt/fr...).
+41. Termómetro escalado a las 48 selecciones
+Contexto: el termómetro v1 (ADR 40) medía solo las 12 de la tribu y de forma anglocéntrica. Lo escalamos a las 48 del Mundial.
+Decisión:
+- La lista de las 48 se deriva en runtime de football-data (no se hardcodea), con escudo (crest) y código (tla).
+- La atención se mide en en.wikipedia. Para no medir redirects ni variantes (que dan vistas basura aunque la API responda 200), /api/heat resuelve el título canónico vía la API de Wikipedia (redirects=1) antes de pedir pageviews. Overrides puntuales donde "football" != fútbol soccer (USA, Canadá, Australia -> "men's national soccer team") y para selecciones renombradas con "men's" (Suecia, Nueva Zelanda).
+- Concurrencia limitada (5) + retry ante fallo intermitente, para no gatillar el rate limit de Wikipedia, que tiraba equipos a 0/null al azar.
+- Thermometer.tsx: usa los escudos de football-data (img normal, sin next/image, para no configurar dominios remotos) + toggle "mi tribu"/"las 48". La tribu se filtra por nombre ES, porque el tla de football-data no coincide con los codes de la tribu (ej. URY vs URU).
+- Medido en inglés. El idioma nativo (modo b) queda como sprint corto siguiente. Wikidata sería la solución definitiva de títulos si se quiere cero fragilidad.
+Aprendizaje: got:true (la API devolvió algo) no garantiza dato correcto — un redirect mide casi cero. El autodiagnóstico del endpoint expone candidate/canonical/views justamente para cazar esto antes de pintar.
+42. Termómetro: idioma nativo además del inglés (modo b)
+Contexto: el termómetro a 48 (ADR 41) medía atención solo en en.wikipedia, con sesgo anglocéntrico (Inglaterra/España/USA pesaban de más; Argentina/Brasil/Japón de menos respecto a su pasión real).
+Decisión: para cada selección se mide la atención en inglés MÁS en su idioma nativo, sumadas. El título nativo no se adivina: se obtiene del langlink del artículo canónico EN vía la API de Wikipedia (action=query&prop=langlinks&lllang=X), fuente de verdad sin fragilidad de títulos. Mapa país→idioma en lib/teams.ts (NATIVE_LANG); los 8 anglófonos (USA, Inglaterra, Escocia, Canadá, Australia, NZ, Ghana, Sudáfrica) se omiten (su atención ya está en EN). Costo: ~144 pedidos a Wikipedia por refresco, concurrencia 5 + retry, ~15s en frío, cache 6h.
+Consecuencias: el podio se globaliza. Validado con vistas absolutas: portugués +32k a Brasil, alemán +34k a Alemania, japonés +25k a Japón, español a Argentina/España/México; los anglófonos quedan igual; ningún langlink falló. La bajada del módulo declara "inglés + idioma local". Wikidata deja de ser necesario para los títulos (los langlinks lo resuelven).
+43. Gancho "hacelo tuyo" (elegí tu selección, sin login)
+Contexto: primer gancho del corazón. El dashboard era genérico para todos; "hacelo tuyo" lo personaliza sin romper el principio sin-login.
+Decisión: el usuario elige UNA selección de las 48 desde un selector modal (components/TeamPicker.tsx, buscable). Se guarda en localStorage (key 'cabala:miSeleccion'), se restaura al volver, leído solo en useEffect para no romper la hidratación SSR. El header muestra la selección con su calor del termómetro; la selección queda resaltada con un halo naranja en el treemap (prop highlightName en Thermometer). Frontend puro: sin backend, sin IA, sin dependencias nuevas.
+Proceso: primera tarea ejecutada con Antigravity bajo el flujo controlado (enmienda ADR 27): Claude escribió la spec estricta, Antigravity creó/editó los archivos y verificó con tsc --noEmit + npm run build, Claude revisó el diff antes del commit. Resultado limpio (sin any, sin deps, JSX en una línea, prefers-reduced-motion respetado).
+Consecuencias: el dashboard se siente propio. Pendiente del corazón: "relato del día" (LLM) y "cábalas" (curadas; UGC como decisión aparte).
+44. Gancho "relato del día" (bajada editorial generada por IA)
+Contexto: segundo gancho del corazón. Una bajada editorial corta, voz Cábala, que pone en palabras el pulso del día, arriba del todo.
+Decisión: el endpoint /api/relato lee de Redis los datos REALES ya cacheados (pulse:global, heat:teams, fixtures:groups), arma un resumen y lo manda a Haiku (claude-haiku-4-5-20251001, mismo patrón que road) con un prompt anti-invento (usa solo lo provisto; prohibido inventar resultados/números/partidos). Cachea en relato:dia con stale-on-error (TTL 7d + maxAge 20h ~ diario), soporta ?refresh, autodiagnóstico (debug con los datos que entraron). Componente RelatoDelDia.tsx lo muestra bajo el header, discreto, sin mensajes técnicos ante error. Solo fuentes reales: las fake (mapa de sedes, en las calles, partido simulado del header) quedan afuera hasta tener dato real; el relato suma fuentes a medida que se vuelven reales.
+Proceso: segunda tarea con Antigravity. Acertó keys/shapes (leyó los route.ts) y el relato salió con las 3 fuentes. En la revisión de diff se cazó el uso de `any` (atajo que viola TS estricto) y se corrigió a tipos concretos, más el autodiagnóstico que faltaba. El flujo controlado (revisar el diff antes de commitear) hizo su trabajo. v1 sin color de memes/journey (pasada siguiente).
+Consecuencias: la primera línea del dashboard es una lectura editorial real del día. Pendiente: sumar color de memes/journey al relato; "cábalas" (curadas; UGC aparte).
+45. Color al relato (memes + viaje del hincha) y refuerzo anti-invento
+Contexto: extensión de ADR 44. Se sumó al relato el color de dos fuentes vivas: memes (Bluesky, key bluesky:feed) y viaje del hincha (key journey:all), como AMBIENTE, no como hecho.
+Decisión:
+- El relato lee bluesky:feed y journey:all de Redis y los pasa a Haiku como "clima" (de qué se habla / hinchas en movimiento), con regla explícita: son color, NO hechos; prohibido sacar de ahí resultados, números o datos.
+- Color de memes best-effort: el feed de Bluesky se cachea 15 min (TTL del módulo de memes) y journey vive 6h. Cuando el relato se genera (cache 20h) el feed de memes suele estar frío, así que memes entra solo si el cache está caliente; journey entra casi siempre. No se le mete fetch interno al relato (serían ~10s de Haiku) por una frutilla. Si no hay dato, la regla "si no está, no lo menciones" lo cubre.
+- Refuerzo anti-invento: se detectó que Haiku agregaba efemérides ciertas pero NO provistas (ej. "México vs Sudáfrica, el mismo partido que marcó el 2010"). Aunque sea cierto, viola el principio de "solo datos provistos" y mañana podría afirmar algo falso igual. Regla nueva: prohibido contexto histórico, efemérides, comparaciones con Mundiales anteriores o datos de jugadores que no estén literalmente en los datos.
+- Termómetro global: Haiku lo llamaba "sudamericano" cuando es mundial. Se aclaró el label del dato y se agregó regla de que el termómetro es mundial; las sudamericanas se destacan dentro, pero no lo reducen.
+Proceso: tercera tarea con Antigravity. Acertó keys/shapes (bluesky:feed y journey:all, verificadas contra los route.ts) y no metió any. En revisión se cazaron dos cosas del PROMPT (no de Antigravity): el invento de la efeméride y la imprecisión del termómetro; ambos corregidos.
+Consecuencias: el relato gana calle (clima de redes y viajeros) sin perder rigor.
+Enmienda ADR 45 (mismo día) — memes fuera del relato
+En las primeras corridas con el cache de memes caliente, el color de memes filtró afirmaciones del feed al relato (ej. "Geoff Hurst mirando desde la tribuna", inventado a partir de un post; también David Raya, Newark). El feed de Bluesky no es "clima" sino posts con afirmaciones y noticias, y la regla "color no es hecho" no frena que Haiku tome un nombre jugoso y lo afirme. Decisión: sacar memes del prompt del relato y dejar solo "viaje del hincha" (journey), cuyos títulos de vlogs evocan ambiente sin afirmar. memesStr queda en el debug (informativo), fuera del prompt. La regla de color se endureció: prohibido repetir nombres propios o afirmaciones del color. Aprendizaje: pasar contenido de terceros a un LLM como "color" es seguro solo si ese contenido ya es genérico (títulos de vlogs); un feed de noticias/memes mete afirmaciones aunque le pidas que sea ambiente.
+46. Gancho "cábalas" (folklore del hincha, curado)
+Contexto: tercer gancho del corazón. El producto se llama Cábala pero la superstición no estaba en ningún lado; las cábalas (rituales del hincha) son el contenido más de marca.
+Decisión:
+- Colección curada y hardcodeada en data/cabalas.ts (20: 15 universales + 5 de hinchada — Uruguay, Brasil x2, México, Japón). Regla editorial: solo folklore colectivo/cultural, NADA atribuido a jugadores ni DTs reales (figuras reales + datos a verificar + diluyen la voz). Las anécdotas de individuos que aparecen en la web se reconvierten en folklore genérico o se descartan.
+- Componente Cabalas.tsx (frontend puro, sin backend/IA): variant 'dia' (la cábala del día, rotada determinísticamente por fecha, fija arriba junto al relato, siempre visible) y variant 'coleccion' (la colección completa, en módulo toggleable). "mi cábala" en localStorage (cabala:miCabala), resaltada, mismo patrón que "hacelo tuyo".
+- Crecimiento CURADO, no automático: se descartó la búsqueda diaria automática de cábalas (mismo riesgo que los memes en el relato: contenido de terceros sin verificar, jugadores reales, ruido SEO de apuestas; además el folklore no se renueva a diario y requeriría un cron, que no usamos). La colección crece cuando Claude busca y propone en sesión y Diego valida. La rotación diaria ya da la sensación de "vivo" sin riesgo.
+Proceso: cuarta tarea con Antigravity. Construyó componente e integración respetando casi todo (sin any, localStorage en useEffect, JSX en una línea, patrón de toggles, reduced-motion). En revisión se cazó una violación de las reglas de hooks (useState/useEffect después de un early return condicional por variant) que ni tsc ni next build detectan; corregido dividiendo en dos subcomponentes (CabalaDelDia sin hooks, CabalasColeccion con hooks) con un dispatcher. Aprendizaje: tsc chequea tipos y el build no corre react-hooks/rules-of-hooks por defecto; las reglas de hooks las caza la revisión humana.
+Consecuencias: el nombre del producto por fin tiene su gancho. Pendiente: crecimiento curado durante el Mundial; eventual "mi cábala" visible arriba (requiere levantar estado a page.tsx); UGC de cábalas como salto aparte (DB + login opcional + moderación).
 47. — resultados en vivo: arquitectura híbrida ESPN + football-data
 contexto: el mundial arranca el 11 jun. había que mostrar marcadores en vivo en header
 y calendario sin reemplazar football-data (fixture completo) ni agregar un plan pago.
@@ -349,86 +394,3 @@ Después de Sprint 7 entramos en modo "uso del producto durante el Mundial" con 
 - **API keys**: nunca en commits; van en `.env.local` (gitignored) y en Vercel Environment Variables
 - **Importes en `app/`**: alias `@/components/...` (configurado en tsconfig.json)
 
-## ADR 41 — Termómetro escalado a las 48 selecciones
-
-Contexto: el termómetro v1 (ADR 40) medía solo las 12 de la tribu y de forma anglocéntrica. Lo escalamos a las 48 del Mundial.
-
-Decisión:
-- La lista de las 48 se deriva en runtime de football-data (no se hardcodea), con escudo (crest) y código (tla).
-- La atención se mide en en.wikipedia. Para no medir redirects ni variantes (que dan vistas basura aunque la API responda 200), /api/heat resuelve el título canónico vía la API de Wikipedia (redirects=1) antes de pedir pageviews. Overrides puntuales donde "football" != fútbol soccer (USA, Canadá, Australia -> "men's national soccer team") y para selecciones renombradas con "men's" (Suecia, Nueva Zelanda).
-- Concurrencia limitada (5) + retry ante fallo intermitente, para no gatillar el rate limit de Wikipedia, que tiraba equipos a 0/null al azar.
-- Thermometer.tsx: usa los escudos de football-data (img normal, sin next/image, para no configurar dominios remotos) + toggle "mi tribu"/"las 48". La tribu se filtra por nombre ES, porque el tla de football-data no coincide con los codes de la tribu (ej. URY vs URU).
-- Medido en inglés. El idioma nativo (modo b) queda como sprint corto siguiente. Wikidata sería la solución definitiva de títulos si se quiere cero fragilidad.
-
-Aprendizaje: got:true (la API devolvió algo) no garantiza dato correcto — un redirect mide casi cero. El autodiagnóstico del endpoint expone candidate/canonical/views justamente para cazar esto antes de pintar.
-
-
-
-## ADR 42 — Termómetro: idioma nativo además del inglés (modo b)
-
-Contexto: el termómetro a 48 (ADR 41) medía atención solo en en.wikipedia, con sesgo anglocéntrico (Inglaterra/España/USA pesaban de más; Argentina/Brasil/Japón de menos respecto a su pasión real).
-
-Decisión: para cada selección se mide la atención en inglés MÁS en su idioma nativo, sumadas. El título nativo no se adivina: se obtiene del langlink del artículo canónico EN vía la API de Wikipedia (action=query&prop=langlinks&lllang=X), fuente de verdad sin fragilidad de títulos. Mapa país→idioma en lib/teams.ts (NATIVE_LANG); los 8 anglófonos (USA, Inglaterra, Escocia, Canadá, Australia, NZ, Ghana, Sudáfrica) se omiten (su atención ya está en EN). Costo: ~144 pedidos a Wikipedia por refresco, concurrencia 5 + retry, ~15s en frío, cache 6h.
-
-Consecuencias: el podio se globaliza. Validado con vistas absolutas: portugués +32k a Brasil, alemán +34k a Alemania, japonés +25k a Japón, español a Argentina/España/México; los anglófonos quedan igual; ningún langlink falló. La bajada del módulo declara "inglés + idioma local". Wikidata deja de ser necesario para los títulos (los langlinks lo resuelven).
-
-## ADR 27 (enmienda) — Antigravity como ejecutor controlado
-
-Contexto: a días del Mundial y con backlog grande, se busca velocidad. El ADR 27 había descartado Claude Code como ejecutor por control. Se reincorpora un ejecutor agéntico (Antigravity IDE), pero con guardrails que preservan el control.
-
-Decisión: división de trabajo. Claude (chat) sigue de arquitecto/diseño/producto y escribe specs estrictas (formato anti-alucinación, anclando el stack real: Anthropic/football-data/Wikipedia/Bluesky, NO el stack Google de Antigravity). Antigravity ejecuta tareas ACOTADAS y cierra cada una con npx tsc --noEmit (y npm run build cuando toca). Diego revisa el diff antes de commitear. Tareas chicas y verificables, no "construí el módulo entero". Si Antigravity sugiere cambiar de proveedor de IA o sumar Genkit/Gemini, se frena.
-
-Consecuencias: más velocidad sin perder el control que motivó el ADR 27 original. El riesgo de errores silenciosos del agente se mitiga con verificación obligatoria + revisión de diff + acotamiento.
-
-## ADR 43 — Gancho "hacelo tuyo" (elegí tu selección, sin login)
-
-Contexto: primer gancho del corazón. El dashboard era genérico para todos; "hacelo tuyo" lo personaliza sin romper el principio sin-login.
-
-Decisión: el usuario elige UNA selección de las 48 desde un selector modal (components/TeamPicker.tsx, buscable). Se guarda en localStorage (key 'cabala:miSeleccion'), se restaura al volver, leído solo en useEffect para no romper la hidratación SSR. El header muestra la selección con su calor del termómetro; la selección queda resaltada con un halo naranja en el treemap (prop highlightName en Thermometer). Frontend puro: sin backend, sin IA, sin dependencias nuevas.
-
-Proceso: primera tarea ejecutada con Antigravity bajo el flujo controlado (enmienda ADR 27): Claude escribió la spec estricta, Antigravity creó/editó los archivos y verificó con tsc --noEmit + npm run build, Claude revisó el diff antes del commit. Resultado limpio (sin any, sin deps, JSX en una línea, prefers-reduced-motion respetado).
-
-Consecuencias: el dashboard se siente propio. Pendiente del corazón: "relato del día" (LLM) y "cábalas" (curadas; UGC como decisión aparte).
-
-## ADR 44 — Gancho "relato del día" (bajada editorial generada por IA)
-
-Contexto: segundo gancho del corazón. Una bajada editorial corta, voz Cábala, que pone en palabras el pulso del día, arriba del todo.
-
-Decisión: el endpoint /api/relato lee de Redis los datos REALES ya cacheados (pulse:global, heat:teams, fixtures:groups), arma un resumen y lo manda a Haiku (claude-haiku-4-5-20251001, mismo patrón que road) con un prompt anti-invento (usa solo lo provisto; prohibido inventar resultados/números/partidos). Cachea en relato:dia con stale-on-error (TTL 7d + maxAge 20h ~ diario), soporta ?refresh, autodiagnóstico (debug con los datos que entraron). Componente RelatoDelDia.tsx lo muestra bajo el header, discreto, sin mensajes técnicos ante error. Solo fuentes reales: las fake (mapa de sedes, en las calles, partido simulado del header) quedan afuera hasta tener dato real; el relato suma fuentes a medida que se vuelven reales.
-
-Proceso: segunda tarea con Antigravity. Acertó keys/shapes (leyó los route.ts) y el relato salió con las 3 fuentes. En la revisión de diff se cazó el uso de `any` (atajo que viola TS estricto) y se corrigió a tipos concretos, más el autodiagnóstico que faltaba. El flujo controlado (revisar el diff antes de commitear) hizo su trabajo. v1 sin color de memes/journey (pasada siguiente).
-
-Consecuencias: la primera línea del dashboard es una lectura editorial real del día. Pendiente: sumar color de memes/journey al relato; "cábalas" (curadas; UGC aparte).
-
-## ADR 45 — Color al relato (memes + viaje del hincha) y refuerzo anti-invento
-
-Contexto: extensión de ADR 44. Se sumó al relato el color de dos fuentes vivas: memes (Bluesky, key bluesky:feed) y viaje del hincha (key journey:all), como AMBIENTE, no como hecho.
-
-Decisión:
-- El relato lee bluesky:feed y journey:all de Redis y los pasa a Haiku como "clima" (de qué se habla / hinchas en movimiento), con regla explícita: son color, NO hechos; prohibido sacar de ahí resultados, números o datos.
-- Color de memes best-effort: el feed de Bluesky se cachea 15 min (TTL del módulo de memes) y journey vive 6h. Cuando el relato se genera (cache 20h) el feed de memes suele estar frío, así que memes entra solo si el cache está caliente; journey entra casi siempre. No se le mete fetch interno al relato (serían ~10s de Haiku) por una frutilla. Si no hay dato, la regla "si no está, no lo menciones" lo cubre.
-- Refuerzo anti-invento: se detectó que Haiku agregaba efemérides ciertas pero NO provistas (ej. "México vs Sudáfrica, el mismo partido que marcó el 2010"). Aunque sea cierto, viola el principio de "solo datos provistos" y mañana podría afirmar algo falso igual. Regla nueva: prohibido contexto histórico, efemérides, comparaciones con Mundiales anteriores o datos de jugadores que no estén literalmente en los datos.
-- Termómetro global: Haiku lo llamaba "sudamericano" cuando es mundial. Se aclaró el label del dato y se agregó regla de que el termómetro es mundial; las sudamericanas se destacan dentro, pero no lo reducen.
-
-Proceso: tercera tarea con Antigravity. Acertó keys/shapes (bluesky:feed y journey:all, verificadas contra los route.ts) y no metió any. En revisión se cazaron dos cosas del PROMPT (no de Antigravity): el invento de la efeméride y la imprecisión del termómetro; ambos corregidos.
-
-Consecuencias: el relato gana calle (clima de redes y viajeros) sin perder rigor.
-
-### Enmienda ADR 45 (mismo día) — memes fuera del relato
-En las primeras corridas con el cache de memes caliente, el color de memes filtró afirmaciones del feed al relato (ej. "Geoff Hurst mirando desde la tribuna", inventado a partir de un post; también David Raya, Newark). El feed de Bluesky no es "clima" sino posts con afirmaciones y noticias, y la regla "color no es hecho" no frena que Haiku tome un nombre jugoso y lo afirme. Decisión: sacar memes del prompt del relato y dejar solo "viaje del hincha" (journey), cuyos títulos de vlogs evocan ambiente sin afirmar. memesStr queda en el debug (informativo), fuera del prompt. La regla de color se endureció: prohibido repetir nombres propios o afirmaciones del color. Aprendizaje: pasar contenido de terceros a un LLM como "color" es seguro solo si ese contenido ya es genérico (títulos de vlogs); un feed de noticias/memes mete afirmaciones aunque le pidas que sea ambiente.
-
-### Enmienda ADR 45 (mismo día) — memes fuera del relato
-En las primeras corridas con el cache de memes caliente, el color de memes filtró afirmaciones del feed al relato (ej. "Geoff Hurst mirando desde la tribuna", inventado a partir de un post; también David Raya, Newark). El feed de Bluesky no es "clima" sino posts con afirmaciones y noticias, y la regla "color no es hecho" no frena que Haiku tome un nombre jugoso y lo afirme. Decisión: sacar memes del prompt del relato y dejar solo "viaje del hincha" (journey), cuyos títulos de vlogs evocan ambiente sin afirmar. memesStr queda en el debug (informativo), fuera del prompt. La regla de color se endureció: prohibido repetir nombres propios o afirmaciones del color. Aprendizaje: pasar contenido de terceros a un LLM como "color" es seguro solo si ese contenido ya es genérico (títulos de vlogs); un feed de noticias/memes mete afirmaciones aunque le pidas que sea ambiente.
-
-## ADR 46 — Gancho "cábalas" (folklore del hincha, curado)
-
-Contexto: tercer gancho del corazón. El producto se llama Cábala pero la superstición no estaba en ningún lado; las cábalas (rituales del hincha) son el contenido más de marca.
-
-Decisión:
-- Colección curada y hardcodeada en data/cabalas.ts (20: 15 universales + 5 de hinchada — Uruguay, Brasil x2, México, Japón). Regla editorial: solo folklore colectivo/cultural, NADA atribuido a jugadores ni DTs reales (figuras reales + datos a verificar + diluyen la voz). Las anécdotas de individuos que aparecen en la web se reconvierten en folklore genérico o se descartan.
-- Componente Cabalas.tsx (frontend puro, sin backend/IA): variant 'dia' (la cábala del día, rotada determinísticamente por fecha, fija arriba junto al relato, siempre visible) y variant 'coleccion' (la colección completa, en módulo toggleable). "mi cábala" en localStorage (cabala:miCabala), resaltada, mismo patrón que "hacelo tuyo".
-- Crecimiento CURADO, no automático: se descartó la búsqueda diaria automática de cábalas (mismo riesgo que los memes en el relato: contenido de terceros sin verificar, jugadores reales, ruido SEO de apuestas; además el folklore no se renueva a diario y requeriría un cron, que no usamos). La colección crece cuando Claude busca y propone en sesión y Diego valida. La rotación diaria ya da la sensación de "vivo" sin riesgo.
-
-Proceso: cuarta tarea con Antigravity. Construyó componente e integración respetando casi todo (sin any, localStorage en useEffect, JSX en una línea, patrón de toggles, reduced-motion). En revisión se cazó una violación de las reglas de hooks (useState/useEffect después de un early return condicional por variant) que ni tsc ni next build detectan; corregido dividiendo en dos subcomponentes (CabalaDelDia sin hooks, CabalasColeccion con hooks) con un dispatcher. Aprendizaje: tsc chequea tipos y el build no corre react-hooks/rules-of-hooks por defecto; las reglas de hooks las caza la revisión humana.
-
-Consecuencias: el nombre del producto por fin tiene su gancho. Pendiente: crecimiento curado durante el Mundial; eventual "mi cábala" visible arriba (requiere levantar estado a page.tsx); UGC de cábalas como salto aparte (DB + login opcional + moderación).

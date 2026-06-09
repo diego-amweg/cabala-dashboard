@@ -27,7 +27,6 @@ Cábala = dashboard editorial del Mundial 2026. Norte (ADR 38): el pulso emocion
 - **mapa de sedes**: FAKE (intensidad random).
 
 ## fakes intencionales (a reemplazar)
-- header: Mundial en curso simulado (partido/día/cronómetro) — placeholder hasta jun 2026.
 - mapa de sedes: intensidad random.
 
 ## pendientes en orden
