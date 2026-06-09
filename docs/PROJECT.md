@@ -295,6 +295,26 @@ implementación:
 - componente Thermometer.tsx: treemap squarified (bruls et al.) recalculado al ancho real del contenedor (ResizeObserver, responsive). latido por calor con keyframe css, respeta prefers-reduced-motion.
 bajas: se eliminó el módulo "sufrimiento compartido" (era fake: textos hardcodeados + ansiedad = 100 - sentimiento). se quitó el sentimiento random del header/teams (también fake).
 pendiente: medir en inglés es anglocéntrico (brasil/francia pesan de más; argentina pesaría más con español). para escalar a las 48 o afinar, sumar idiomas por equipo (es/pt/fr...).
+47. — resultados en vivo: arquitectura híbrida ESPN + football-data
+contexto: el mundial arranca el 11 jun. había que mostrar marcadores en vivo en header
+y calendario sin reemplazar football-data (fixture completo) ni agregar un plan pago.
+espn tiene una api no oficial, gratis, sin auth, con estados en tiempo casi real.
+decisión (cuatro tareas):
+- /api/live: ventana ayer→+3 días, TTL dinámico (30s con live, 10min sin), teamES para
+  traducción, robustez stale-on-error.
+- header real: reemplaza CURRENT_MATCH/NEXT_MATCH hardcodeados por fetch a /api/live con
+  polling cada 60s y degradación a /api/fixtures. cronómetro fake eliminado.
+  fecha real ART con Intl.DateTimeFormat en useEffect.
+- calendar polling: segundo useEffect independiente que pollea /api/live cada 60s y llama
+  a mergeWithLive() —función pura— que parchea status/scores/minute solo en partidos que
+  matcheen por home+away normalizado. badge live muestra el minuto (live · 87').
+- maxAge dinámico: /api/fixtures y /api/standings usan 5min en día de partido, 1h el
+  resto. isMatchDay se calcula desde raw matches con isToday_ART y se guarda en el cache.
+  compatible con cache viejo (undefined → falsy → 1h).
+deuda técnica resuelta: fixtures importa teamES de lib/teams.ts; aliases ESPN 'Bosnia and
+Herzegovina' y 'DR Congo' agregados.
+riesgo residual: si ESPN usa algún nombre en inglés no mapeado, el merge falla silencioso
+(no es crash; el partido muestra datos de fixtures sin overlay). plan: monitorear el 11 jun.
 
 ## Cronograma realizado
 
