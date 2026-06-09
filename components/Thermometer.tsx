@@ -25,10 +25,11 @@ function worstRatio(areas: number[], side: number, sumArea: number): number {
 }
 
 function squarify(teams: TeamHeat[], W: number, H: number): Rect[] {
-  const total = teams.reduce((s, t) => s + t.heat, 0);
-  if (total <= 0 || !teams.length || W <= 0 || H <= 0) return [];
+  const valid = teams.filter(t => t.heat > 0);
+  const total = valid.reduce((s, t) => s + t.heat, 0);
+  if (total <= 0 || !valid.length || W <= 0 || H <= 0) return [];
   const area = W * H;
-  const scaled: Scaled[] = teams.map(t => ({ team: t, area: (t.heat / total) * area }));
+  const scaled: Scaled[] = valid.map(t => ({ team: t, area: (t.heat / total) * area }));
   const out: Rect[] = [];
   let rx = 0, ry = 0, rw = W, rh = H, i = 0;
   while (i < scaled.length) {
