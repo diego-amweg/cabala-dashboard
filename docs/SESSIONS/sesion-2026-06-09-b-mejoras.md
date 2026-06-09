@@ -20,3 +20,10 @@
 - GDELT para intensidad del mapa de sedes
 - RSS de medios locales para "en las calles"
 - bracket: conectar FixtureBracket cuando football-data cargue eliminatorias (~27 jun)
+
+## hotfix post-cierre
+- causa: FOOTBALLDATA_KEY no estaba configurada en Vercel env vars
+- síntoma: /api/standings devolvía groups:[] ("falta la API key")
+- fixtures aguantó porque tenía datos en Redis (stale-on-error funcionó)
+- fix: re-agregar la key en vercel.com → Settings → Environment Variables
+- lección: si standings o fixtures muestran vacíos, verificar primero las env vars de Vercel
