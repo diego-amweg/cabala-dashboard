@@ -5,6 +5,7 @@ const API_BASE = 'https://api.football-data.org/v4';
 const FIXTURES_CACHE_KEY = 'fixtures:groups';
 const FIXTURES_CACHE_TTL = 7 * 24 * 60 * 60; // 7d en redis: guarda el último bueno conocido
 const FIXTURES_MAX_AGE = 60 * 60 * 1000;     // 1h: si el cache es más viejo, intenta refrescar
+const MATCH_DAY_MAX_AGE = 5 * 60 * 1000;   // 5min en día de partido
 
 interface FixtureItem {
   id: string;
@@ -66,14 +67,21 @@ function phaseLabel(group: string | null): string {
   return 'fase de grupos';
 }
 
-type Cached = { items: FixtureItem[]; updatedAt: number };
+function isToday_ART(utcDate: string): boolean {
+  const m = new Date(new Date(utcDate).getTime() - 3 * 3600 * 1000);
+  const t = new Date(Date.now() - 3 * 3600 * 1000);
+  return m.getUTCFullYear() === t.getUTCFullYear() && m.getUTCMonth() === t.getUTCMonth() && m.getUTCDate() === t.getUTCDate();
+}
+
+type Cached = { items: FixtureItem[]; updatedAt: number; isMatchDay: boolean };
 
 export async function GET(req: Request) {
   const forceRefresh = new URL(req.url).searchParams.get('refresh') === 'true';
   const cached = await cacheGet<Cached>(FIXTURES_CACHE_KEY);
 
   // cache fresco (menos de 1h) y sin refresh forzado -> devolver directo
-  if (cached && !forceRefresh && Date.now() - cached.updatedAt < FIXTURES_MAX_AGE) {
+  const maxAge = cached?.isMatchDay ? MATCH_DAY_MAX_AGE : FIXTURES_MAX_AGE;
+  if (cached && !forceRefresh && Date.now() - cached.updatedAt < maxAge) {
     return NextResponse.json({ items: cached.items, updatedAt: cached.updatedAt, cached: true });
   }
 
@@ -131,8 +139,10 @@ export async function GET(req: Request) {
       return serveStaleOr({ count: 0, debug: { totalReceived: data.matches.length, stages, resultSet: data.resultSet ?? null } });
     }
 
-    await cacheSet(FIXTURES_CACHE_KEY, { items, updatedAt: Date.now() }, FIXTURES_CACHE_TTL);
-    return NextResponse.json({ items, updatedAt: Date.now(), count: items.length });
+    const isMatchDay = data.matches.some((m: any) => m.stage === 'GROUP_STAGE' && m.utcDate && isToday_ART(m.utcDate));
+
+    await cacheSet(FIXTURES_CACHE_KEY, { items, updatedAt: Date.now(), isMatchDay }, FIXTURES_CACHE_TTL);
+    return NextResponse.json({ items, updatedAt: Date.now(), count: items.length, isMatchDay });
   } catch {
     return serveStaleOr({ error: 'error al consultar football-data' });
   }

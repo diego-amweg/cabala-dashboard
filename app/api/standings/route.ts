@@ -6,6 +6,7 @@ const API_BASE = 'https://api.football-data.org/v4';
 const STANDINGS_CACHE_KEY = 'standings:groups';
 const STANDINGS_CACHE_TTL = 7 * 24 * 60 * 60; // 7d: último bueno conocido
 const STANDINGS_MAX_AGE = 60 * 60 * 1000;     // 1h: si es más viejo, intenta refrescar
+const MATCH_DAY_MAX_AGE = 5 * 60 * 1000;   // 5min en día de partido
 
 interface TeamRow {
   team: string;
@@ -27,13 +28,20 @@ function emptyRow(team: string): TeamRow {
   return { team, played: 0, won: 0, draw: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0 };
 }
 
-type Cached = { groups: Group[]; updatedAt: number };
+function isToday_ART(utcDate: string): boolean {
+  const m = new Date(new Date(utcDate).getTime() - 3 * 3600 * 1000);
+  const t = new Date(Date.now() - 3 * 3600 * 1000);
+  return m.getUTCFullYear() === t.getUTCFullYear() && m.getUTCMonth() === t.getUTCMonth() && m.getUTCDate() === t.getUTCDate();
+}
+
+type Cached = { groups: Group[]; updatedAt: number; isMatchDay: boolean };
 
 export async function GET(req: Request) {
   const forceRefresh = new URL(req.url).searchParams.get('refresh') === 'true';
   const cached = await cacheGet<Cached>(STANDINGS_CACHE_KEY);
 
-  if (cached && !forceRefresh && Date.now() - cached.updatedAt < STANDINGS_MAX_AGE) {
+  const maxAge = cached?.isMatchDay ? MATCH_DAY_MAX_AGE : STANDINGS_MAX_AGE;
+  if (cached && !forceRefresh && Date.now() - cached.updatedAt < maxAge) {
     return NextResponse.json({ groups: cached.groups, updatedAt: cached.updatedAt, cached: true });
   }
 
@@ -106,8 +114,10 @@ export async function GET(req: Request) {
       return serveStaleOr({ count: 0, debug: { totalReceived: data.matches.length, stages } });
     }
 
-    await cacheSet(STANDINGS_CACHE_KEY, { groups, updatedAt: Date.now() }, STANDINGS_CACHE_TTL);
-    return NextResponse.json({ groups, updatedAt: Date.now(), count: groups.length });
+    const isMatchDay = data.matches.some((m: any) => m.stage === 'GROUP_STAGE' && m.utcDate && isToday_ART(m.utcDate));
+
+    await cacheSet(STANDINGS_CACHE_KEY, { groups, updatedAt: Date.now(), isMatchDay }, STANDINGS_CACHE_TTL);
+    return NextResponse.json({ groups, updatedAt: Date.now(), count: groups.length, isMatchDay });
   } catch {
     return serveStaleOr({ error: 'error al consultar football-data' });
   }
