@@ -360,6 +360,29 @@ deuda técnica resuelta: fixtures importa teamES de lib/teams.ts; aliases ESPN '
 Herzegovina' y 'DR Congo' agregados.
 riesgo residual: si ESPN usa algún nombre en inglés no mapeado, el merge falla silencioso
 (no es crash; el partido muestra datos de fixtures sin overlay). plan: monitorear el 11 jun.
+48. — fix: loop infinito en el termómetro (squarify) por selección con calor 0
+contexto: a 2 días del kickoff, el dashboard se colgaba en prod y local ("la página no
+responde"), sin error en consola, F5 igual y ABRIR sin responder. intermitente.
+diagnóstico: el Call Stack (pausa con F8 en Chrome + "Script terminated by timeout at R/m"
+en Firefox) apuntó al useMemo del treemap de Thermometer.tsx. el squarify entra en loop
+infinito cuando una selección tiene heat 0: área 0 → worstRatio calcula 0/0 = NaN → el
+`if (ratio <= best)` da false (NaN <= Infinity es false) → el while interno corta sin
+consumir el item, sin avanzar el índice y sin achicar rw/rh → el while externo gira para
+siempre y clava el main thread. por eso era un cuelgue sin error (no crash) y ni ABRIR
+respondía. el heat (atención de Wikipedia, sqrt normalizado 0-100) puede dar 0 para una
+selección con ~0 vistas: bug latente que los datos del día destaparon. NO lo causaron los
+cambios de header/pre-warm de hoy (commit 6784a35); la correlación de timeline era falsa.
+decisión: el fix vive en el algoritmo, no en el caller. squarify filtra
+`teams.filter(t => t.heat > 0)` antes de calcular (también caza NaN y negativos). una
+selección con 0 vistas era un rectángulo invisible igual, así que no cambia nada visual. se
+descartó el parche en page.tsx (filtrar antes de pasar el prop) para no duplicar la lógica:
+la robustez ante datos degenerados es responsabilidad de la función.
+consecuencias: el termómetro tolera calor 0 sin colgarse, en "mi tribu" y en "las 48".
+aprendizaje: un cuelgue sin error de consola = loop que satura el main thread, no excepción;
+se caza con el Call Stack, no adivinando. los algoritmos de layout geométrico (treemap)
+tienen que tolerar entradas degeneradas (área/lado 0); confiar en best=Infinity para aceptar
+el primer item de cada fila es frágil ante NaN.
+commit: 224e307 (components/Thermometer.tsx).
 
 ## Cronograma realizado
 
