@@ -18,8 +18,18 @@ import RelatoDelDia from '@/components/RelatoDelDia';
 import Cabalas from '@/components/Cabalas';
 import { MAP_VIEWBOX, COUNTRY_PATHS, STATE_PATHS, CITIES } from '@/data/mapData';
 
-const CURRENT_MATCH = 'octavos · México 1-1 Países Bajos · MetLife';
-const NEXT_MATCH = { teams: 'Brasil vs Croacia', date: 'vie 26 jun', time: '13:00 ART', venue: 'NRG · Houston' };
+interface LiveItem {
+  id: string;
+  date: string;
+  time: string;
+  home: string;
+  away: string;
+  homeScore?: number;
+  awayScore?: number;
+  status: 'scheduled' | 'live' | 'finished';
+  minute?: string;
+  venue: string;
+}
 
 // la tribu fija de 12 selecciones (code + nombre). el calor de cada una sale real de /api/heat.
 const TRIBE: { code: string; name: string }[] = [
@@ -62,7 +72,6 @@ const CALLE: CalleItem[] = [
 ];
 
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
-const fmtMin = (sec: number) => `${Math.floor(sec / 60)}' +${(sec % 60) < 10 ? '0' + (sec % 60) : (sec % 60)}''`;
 
 const ALL_MODULES = ['map', 'senti', 'memes', 'calle', 'journey', 'calendar', 'gifs', 'road', 'immersive', 'cabalas'] as const;
 type ModuleId = typeof ALL_MODULES[number];
@@ -70,7 +79,8 @@ type ModuleId = typeof ALL_MODULES[number];
 export default function CabalaDashboard() {
   const [pulse, setPulse] = useState(78);
   const [pulseTrend, setPulseTrend] = useState<number | null>(null);
-  const [liveSec, setLiveSec] = useState(60);
+  const [live, setLive] = useState<LiveItem[]>([]);
+  const [nowDate, setNowDate] = useState<string>('');
   const [heat, setHeat] = useState<TeamHeat[]>([]);
   const [myTeam, setMyTeam] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -106,6 +116,10 @@ export default function CabalaDashboard() {
   useEffect(() => {
     const saved = localStorage.getItem('cabala:miSeleccion');
     if (saved) setMyTeam(saved);
+    // pre-calentar el road de toda la tribu en background: haiku tarda ~15s en frío,
+    // así arrancamos las generaciones al montar la página antes de que el usuario abra
+    // el módulo. si redis está fresco (24h), cada fetch vuelve en <100ms sin llamar a haiku.
+    TRIBE.forEach(t => { fetch(`/api/road/${t.code}`).catch(() => { }); });
   }, []);
 
   const handlePick = (name: string) => {
@@ -146,8 +160,32 @@ export default function CabalaDashboard() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    const fetchLive = async () => {
+      try {
+        let res = await fetch('/api/live');
+        let data = await res.json();
+        if (!res.ok || !data.items || data.items.length === 0) {
+          res = await fetch('/api/fixtures');
+          data = await res.json();
+        }
+        if (!cancelled && data.items) {
+          setLive(data.items);
+        }
+      } catch { }
+    };
+    fetchLive();
+    const interval = setInterval(fetchLive, 60000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, []);
+
+  useEffect(() => {
+    const f = new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    setNowDate(f.format(new Date()).replace(',', ' ·').toLowerCase() + ' ART');
+  }, []);
+
+  useEffect(() => {
     const interval = setInterval(() => {
-      setLiveSec(s => (s + 2 >= 90 * 60 ? 60 : s + 2));
       setIntensity(prev => {
         const next: Record<string, number> = {};
         for (const k in prev) next[k] = Math.max(10, Math.min(100, prev[k] + rand(-8, 10)));
@@ -207,6 +245,12 @@ export default function CabalaDashboard() {
   const tribeArray = Array.from(tribe);
   const heartDuration = (180 - pulse) / 60;
 
+  const liveMatches = live.filter(i => i.status === 'live');
+  const nextMatch = live.find(i => i.status === 'scheduled');
+  let immersiveMatchStr = 'mundial 2026';
+  if (liveMatches.length > 0) immersiveMatchStr = `${liveMatches[0].home} vs ${liveMatches[0].away}`;
+  else if (nextMatch) immersiveMatchStr = `${nextMatch.home} vs ${nextMatch.away}`;
+
   return (
     <main className="min-h-screen bg-stone-50 text-stone-900 selection:bg-orange-200">
       <style dangerouslySetInnerHTML={{ __html: `@keyframes cabala-heartbeat { 0%, 100% { transform: scale(1); } 25% { transform: scale(1.25); } 50% { transform: scale(0.95); } 75% { transform: scale(1.18); } }` }} />
@@ -231,7 +275,7 @@ export default function CabalaDashboard() {
               )}
               <button onClick={shareCabala} className="inline-flex items-center gap-1.5 rounded-md border border-orange-300 bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-900 transition-colors hover:bg-orange-100"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>{shared ? 'copiado' : 'compartir'}</button>
             </div>
-            <div className="font-mono text-xs text-stone-500">día 12 · jue 25 jun · 18:42 ART</div>
+            <div className="font-mono text-xs text-stone-500">{nowDate}</div>
             <div className="flex items-center gap-2.5 rounded-md bg-stone-100 px-3 py-1.5">
               <span className="text-[10px] uppercase tracking-wider text-stone-500">pulso global</span>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="#f97316" style={{ animation: `cabala-heartbeat ${heartDuration}s ease-in-out infinite`, transformOrigin: 'center' }}>
@@ -246,21 +290,25 @@ export default function CabalaDashboard() {
         <RelatoDelDia />
         <Cabalas variant="dia" />
 
-        <div className="mt-4 flex items-center gap-3 rounded-md bg-stone-100 px-4 py-3 text-sm">
-          <span className="inline-flex items-center gap-1.5 rounded bg-orange-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-orange-900">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-orange-500" />
-            live
-          </span>
-          <span>{CURRENT_MATCH}</span>
-          <span className="ml-auto font-mono text-xs tabular-nums text-stone-500">{fmtMin(liveSec)}</span>
-        </div>
+        {liveMatches.length > 0 && liveMatches.map(m => (
+          <div key={m.id} className="mt-4 flex items-center gap-3 rounded-md bg-stone-100 px-4 py-3 text-sm">
+            <span className="inline-flex items-center gap-1.5 rounded bg-orange-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-orange-900">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-orange-500" />
+              live
+            </span>
+            <span>{m.home} {m.homeScore ?? 0}-{m.awayScore ?? 0} {m.away}</span>
+            <span className="ml-auto font-mono text-xs tabular-nums text-stone-500">{m.minute ?? ''}</span>
+          </div>
+        ))}
 
-        <div className="mt-2 flex items-center gap-3 rounded-md border border-stone-200 bg-white px-4 py-2 text-xs">
-          <span className="inline-flex items-center gap-1.5 rounded bg-stone-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-stone-600">próximo</span>
-          <span className="font-medium text-stone-900">{NEXT_MATCH.teams}</span>
-          <span className="text-stone-500">· {NEXT_MATCH.date} · {NEXT_MATCH.time}</span>
-          <span className="ml-auto truncate text-[10px] text-stone-400">{NEXT_MATCH.venue}</span>
-        </div>
+        {nextMatch && (
+          <div className={`flex items-center gap-3 rounded-md border border-stone-200 bg-white px-4 py-2 text-xs ${liveMatches.length > 0 ? 'mt-2' : 'mt-4'}`}>
+            <span className="inline-flex items-center gap-1.5 rounded bg-stone-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-stone-600">próximo</span>
+            <span className="font-medium text-stone-900">{nextMatch.home} vs {nextMatch.away}</span>
+            <span className="text-stone-500">· {nextMatch.date} · {nextMatch.time}</span>
+            <span className="ml-auto truncate text-[10px] text-stone-400">{nextMatch.venue}</span>
+          </div>
+        )}
 
         <Link href="/fixture" className="mt-3 flex items-center gap-3 rounded-md border-2 border-orange-300 bg-orange-50 px-4 py-2.5 text-xs transition-colors hover:bg-orange-100"><span className="font-medium text-orange-950">fixture completo del mundial</span><span className="text-orange-700">· 104 partidos · grupos + eliminatorias</span><span className="ml-auto rounded bg-orange-500 px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-white">abrir →</span></Link>
 
@@ -411,7 +459,7 @@ export default function CabalaDashboard() {
               <h2 className="text-xs font-medium tracking-wide text-stone-700">inmersivo</h2>
               <span className="text-[10px] text-stone-400">cómo vivir el partido</span>
             </div>
-            <ImmersiveLayer match={CURRENT_MATCH} />
+            <ImmersiveLayer match={immersiveMatchStr} />
           </section>
         )}
 
