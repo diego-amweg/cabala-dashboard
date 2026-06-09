@@ -18,7 +18,7 @@ Cábala = dashboard editorial del Mundial 2026. Norte (ADR 38): el pulso emocion
 - **calendario** (/api/fixtures) y **fase de grupos** (/api/standings): reales desde football-data. 12 grupos, 48 equipos. Posiciones se llenan durante el torneo. Robustez stale-on-error + reintentos en el front. maxAge dinámico: 5min en día de partido, 1h el resto. Calendar pollea /api/live cada 60s y hace merge de scores+minuto por nombre normalizado (mergeWithLive). ADRs 36, 37, 39, 47. Pendiente: bracket (cuando football-data cargue ~27 jun).
 - **memes/peleas** (Bluesky): real. Hashtags reales como query, filtro keep/reject con Haiku, feed cacheado en Redis TTL 15min. ADR 35. Pendiente: evitar re-clasificar en frío (gasto de saldo).
 - **gifs del Mundial**: real (Giphy, por tribu, mp4 lazy). ADRs 31, 32.
-- **el camino en video / BTS**: piloto Argentina hardcodeado; road con Haiku (cacheado 24h). ADRs 29, 30, 33. Pendiente: escalar BTS al resto (4d-3e abierto), BTS live (sprint 8).
+- **el camino en video / BTS**: piloto Argentina hardcodeado; road con Haiku (cacheado 24h Redis). Pre-warm de toda la tribu al montar la página (page.tsx, fire-and-forget) y al abrir el módulo (RoadToWorldCup.tsx); el 15s en frío solo ocurre la primera vez del día. ADRs 29, 30, 33. Pendiente: escalar BTS al resto (4d-3e abierto), BTS live (sprint 8).
 - **capa inmersiva**: covers + agrupación por accesibilidad. ADR 28.
 - **hacelo tuyo** (gancho del corazón): elegí tu selección (modal de las 48, TeamPicker.tsx), guardada en localStorage sin login; el header muestra tu equipo + su calor y queda con halo naranja en el termómetro. ADR 43. Frontend puro.
 - **relato del día** (gancho del corazón): bajada editorial bajo el header (RelatoDelDia.tsx), generada por Haiku (/api/relato) a partir de datos reales (pulso + termómetro + próximos partidos + color de viaje del hincha como ambiente), prompt anti-invento reforzado (sin efemérides ni datos no provistos; termómetro declarado mundial; prohibido tomar nombres/afirmaciones del color), cache 20h, autodiagnóstico. ADR 44 + 45 (enmienda: memes fuera del prompt por filtrar afirmaciones; quedan en debug). journey confiable (6h).
@@ -39,7 +39,7 @@ Cábala = dashboard editorial del Mundial 2026. Norte (ADR 38): el pulso emocion
 - npm audit (3 vulns transitivas, sin --force).
 - Licencias de covers/BTS antes del público (bloqueante legal).
 - Mensajes de error técnicos → amigables.
-- Road ~15s en frío (Haiku); evaluar precalentar.
+- "En las calles" (CALLE en page.tsx): textos curados editoriales, no reales. GDELT y RSS evaluados para post-kickoff (~13 jun en adelante).
 - Dependencia del saldo de Anthropic = riesgo operativo durante el Mundial.
 - Cleanup cosmético Tailwind v4 (Calendar max-h, Road -left).
 
