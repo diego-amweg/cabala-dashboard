@@ -19,6 +19,8 @@ export const TEAM_ES: Record<string, string> = {
   'Czechia': 'República Checa', 'Bosnia-Herzegovina': 'Bosnia y Herzegovina', 'Iraq': 'Irak',
   'Congo DR': 'RD del Congo', 'Turkey': 'Turquía', 'Greece': 'Grecia', 'Wales': 'Gales',
   'Ukraine': 'Ucrania', 'Sweden': 'Suecia', 'Serbia': 'Serbia',
+  'Bosnia and Herzegovina': 'Bosnia y Herzegovina',
+  'DR Congo': 'RD del Congo',
 };
 
 export function teamES(name: string): string {
