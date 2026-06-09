@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import TeamBadge from './TeamBadge';
 
 interface RoadMoment {
@@ -76,17 +76,17 @@ const TEAM_BTS_VIDEOS: Record<string, BtsVideo[]> = {
 };
 
 const TAG_COLORS: Record<string, { bg: string; fg: string }> = {
-  'decisivo':     { bg: '#dcfce7', fg: '#14532d' },
-  'drama':        { bg: '#fee2e2', fg: '#7f1d1d' },
-  'hito':         { bg: '#dbeafe', fg: '#1e3a8a' },
+  'decisivo': { bg: '#dcfce7', fg: '#14532d' },
+  'drama': { bg: '#fee2e2', fg: '#7f1d1d' },
+  'hito': { bg: '#dbeafe', fg: '#1e3a8a' },
   'preocupación': { bg: '#fef3c7', fg: '#78350f' },
   'preocupacion': { bg: '#fef3c7', fg: '#78350f' },
 };
 
 const TAG_LABELS: Record<string, string> = {
-  'decisivo':     '⚡ decisivo',
-  'drama':        '💔 drama',
-  'hito':         '🏆 hito',
+  'decisivo': '⚡ decisivo',
+  'drama': '💔 drama',
+  'hito': '🏆 hito',
   'preocupación': '⚠️ preocupación',
   'preocupacion': '⚠️ preocupación',
 };
@@ -95,9 +95,9 @@ const FALLBACK_TAG = { bg: '#f5f5f4', fg: '#57534e' };
 
 const STATUS_COLORS: Record<string, { bg: string; fg: string }> = {
   'clasificado': { bg: '#dcfce7', fg: '#14532d' },
-  'repechaje':   { bg: '#fef3c7', fg: '#78350f' },
-  'en lucha':    { bg: '#dbeafe', fg: '#1e3a8a' },
-  'eliminado':   { bg: '#fee2e2', fg: '#7f1d1d' },
+  'repechaje': { bg: '#fef3c7', fg: '#78350f' },
+  'en lucha': { bg: '#dbeafe', fg: '#1e3a8a' },
+  'eliminado': { bg: '#fee2e2', fg: '#7f1d1d' },
 };
 
 function formatHeroLine(hero: HeroData | undefined): string {
@@ -117,6 +117,14 @@ export default function RoadToWorldCup({ tribe }: RoadToWorldCupProps) {
   const [road, setRoad] = useState<RoadData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const preWarmedRef = useRef(false);
+
+  useEffect(() => {
+    if (!preWarmedRef.current && tribe.length > 0) {
+      preWarmedRef.current = true;
+      tribe.forEach(code => { fetch(`/api/road/${code}`).catch(() => { }); });
+    }
+  }, [tribe]);
 
   useEffect(() => {
     if (tribe.length === 0) {
@@ -175,11 +183,10 @@ export default function RoadToWorldCup({ tribe }: RoadToWorldCupProps) {
           <button
             key={t}
             onClick={() => setActiveTeam(t)}
-            className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
-              t === activeTeam
-                ? 'border-orange-300 bg-orange-50 text-orange-950'
-                : 'border-stone-200 text-stone-500 hover:border-stone-300'
-            }`}
+            className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${t === activeTeam
+              ? 'border-orange-300 bg-orange-50 text-orange-950'
+              : 'border-stone-200 text-stone-500 hover:border-stone-300'
+              }`}
           >
             {TEAM_NAMES[t] || t}
           </button>
