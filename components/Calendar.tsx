@@ -13,6 +13,16 @@ interface FixtureItem {
   status: 'scheduled' | 'live' | 'finished';
   homeScore?: number;
   awayScore?: number;
+  minute?: string;
+}
+
+interface LiveItem {
+  home: string;
+  away: string;
+  status: 'scheduled' | 'live' | 'finished';
+  homeScore?: number;
+  awayScore?: number;
+  minute?: string;
 }
 
 const STATUS_STYLES: Record<string, { bg: string; fg: string; label: string }> = {
@@ -22,6 +32,18 @@ const STATUS_STYLES: Record<string, { bg: string; fg: string; label: string }> =
 };
 
 const DAY_COLORS = ['#60a5fa', '#fbbf24', '#a78bfa', '#f472b6', '#34d399', '#f87171'];
+
+function normalize(s: string) { return s.toLowerCase().trim(); }
+
+function mergeWithLive(fixtures: FixtureItem[], liveItems: LiveItem[]): FixtureItem[] {
+  return fixtures.map(f => {
+    const match = liveItems.find(
+      l => normalize(l.home) === normalize(f.home) && normalize(l.away) === normalize(f.away)
+    );
+    if (!match) return f;
+    return { ...f, status: match.status, homeScore: match.homeScore, awayScore: match.awayScore, minute: match.minute };
+  });
+}
 
 function groupByDate(fixtures: FixtureItem[]): { date: string; items: FixtureItem[]; isLive: boolean }[] {
   const groups = new Map<string, FixtureItem[]>();
@@ -69,6 +91,23 @@ export default function Calendar() {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    const fetchLive = async () => {
+      try {
+        const res = await fetch('/api/live');
+        const data = await res.json();
+        if (!res.ok || !data.items || data.items.length === 0) return;
+        if (!cancelled) {
+          setFixtures(prev => mergeWithLive(prev, data.items));
+        }
+      } catch {}
+    };
+    fetchLive();
+    const interval = setInterval(fetchLive, 60000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, []);
+
   if (loading) {
     return <div className="rounded-xl border border-stone-200 bg-white p-6 text-center text-xs text-stone-400">cargando el fixture…</div>;
   }
@@ -112,7 +151,7 @@ export default function Calendar() {
                       </div>
                       <span className="shrink-0 rounded px-1.5 py-px text-[9px] font-medium uppercase tracking-wider" style={{ backgroundColor: st.bg, color: st.fg }}>
                         {f.status === 'live' && <span className="mr-1 inline-block h-1 w-1 animate-pulse rounded-full" style={{ backgroundColor: st.fg }} />}
-                        {st.label}
+                        {f.status === 'live' && f.minute ? `live · ${f.minute}` : st.label}
                       </span>
                     </div>
                   );
