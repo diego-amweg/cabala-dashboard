@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Chat from '@/components/Chat';
+// import Chat from '@/components/Chat'; // chat escondido para el lanzamiento (reactivar a futuro)
 import RoadToWorldCup from '@/components/RoadToWorldCup';
 import FanJourney from '@/components/FanJourney';
 import ImmersiveLayer from '@/components/ImmersiveLayer';
@@ -477,7 +477,7 @@ export default function CabalaDashboard() {
           Cábala · construido por Diego
         </footer>
       </div>
-      <Chat context={{ memes, tribe: tribeArray, activeMods: Array.from(activeMods) }} />
+      {/* <Chat context={{ memes, tribe: tribeArray, activeMods: Array.from(activeMods) }} /> */}
       <StadiumModal cityId={selectedStadium} onClose={() => setSelectedStadium(null)} />
       {pickerOpen && <TeamPicker teams={heat} onPick={handlePick} onClose={() => setPickerOpen(false)} />}
     </main>
