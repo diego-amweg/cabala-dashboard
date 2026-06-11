@@ -106,7 +106,7 @@ export default function Calendar() {
     fetchLive();
     const interval = setInterval(fetchLive, 60000);
     return () => { cancelled = true; clearInterval(interval); };
-  }, []);
+  }, [fixtures.length]);
 
   if (loading) {
     return <div className="rounded-xl border border-stone-200 bg-white p-6 text-center text-xs text-stone-400">cargando el fixture…</div>;
