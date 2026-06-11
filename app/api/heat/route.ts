@@ -37,11 +37,11 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promis
   return out;
 }
 
-async function retryNull<T>(fn: () => Promise<T | null>, tries = 2): Promise<T | null> {
+async function retryNull<T>(fn: () => Promise<T | null>, tries = 3): Promise<T | null> {
   for (let i = 0; i < tries; i++) {
     const r = await fn();
     if (r !== null) return r;
-    if (i < tries - 1) await new Promise(res => setTimeout(res, 250));
+    if (i < tries - 1) await new Promise(res => setTimeout(res, 400 * (i + 1)));
   }
   return null;
 }
@@ -151,18 +151,26 @@ export async function GET(req: Request) {
     return serveStaleOr({ error: 'wikipedia no respondió', debug: { window: `${startStr}-${endStr}` } });
   }
 
-  const maxViews = Math.max(...ok.map(totalViews));
-  const teams: TeamHeat[] = results
-    .map(r => {
-      const v = totalViews(r);
-      return {
-        code: r.tla ?? r.name.slice(0, 3).toUpperCase(),
-        name: teamES(r.name),
-        crest: r.crest,
-        views: v,
-        heat: maxViews > 0 && v > 0 ? Math.max(5, Math.round(Math.sqrt(v / maxViews) * 100)) : 0,
-      };
-    })
+  // red de seguridad item-level: si wikipedia falló para un equipo en esta corrida pero el
+  // cache previo tenía un valor bueno, conservamos el último bueno en vez de degradarlo a 0.
+  const prevViews = new Map<string, number>();
+  if (cached) for (const t of cached.teams) if (t.views > 0) prevViews.set(t.code, t.views);
+  const merged = results.map(r => {
+    const code = r.tla ?? r.name.slice(0, 3).toUpperCase();
+    const measured = totalViews(r);
+    const views = measured > 0 ? measured : (prevViews.get(code) ?? 0);
+    return { ...r, code, views, recovered: measured === 0 && views > 0 };
+  });
+
+  const maxViews = Math.max(...merged.map(m => m.views));
+  const teams: TeamHeat[] = merged
+    .map(m => ({
+      code: m.code,
+      name: teamES(m.name),
+      crest: m.crest,
+      views: m.views,
+      heat: maxViews > 0 && m.views > 0 ? Math.max(5, Math.round(Math.sqrt(m.views / maxViews) * 100)) : 0,
+    }))
     .sort((a, b) => b.views - a.views);
 
   const payload = {
@@ -172,6 +180,7 @@ export async function GET(req: Request) {
       window: `${startStr}-${endStr}`,
       count: teams.length,
       failed: results.filter(r => r.viewsEN === null && r.viewsNative === null).map(r => r.name),
+      recovered: merged.filter(m => m.recovered).map(m => teamES(m.name)),
       sources: results.map(r => ({ es: teamES(r.name), lang: r.lang, canonical: r.canonical, nativeTitle: r.nativeTitle, viewsEN: r.viewsEN, viewsNative: r.viewsNative })),
     },
   };
