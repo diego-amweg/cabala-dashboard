@@ -43,11 +43,4 @@ analytics reveló 27 visitas directas sin referrer (scanners del dominio nuevo) 
 inflaban la tabla con identidades fantasma vía el register al montar. fix: identidad
 recién al primer pálpito. segundo fix: race fixtures/live que mostraba inputs ~60s en
 partidos en vivo tras recargar (sin agujero: el lock server-side rechazaba). aplicado
-en palpito y calendar. commits e3ae927 + [calendar].
-
-## Addendum 2 (17:00-18:00) — anti-bots y race del merge
-analytics reveló 27 visitas directas sin referrer (scanners del dominio nuevo) que
-inflaban la tabla con identidades fantasma vía el register al montar. fix: identidad
-recién al primer pálpito. segundo fix: race fixtures/live que mostraba inputs ~60s en
-partidos en vivo tras recargar (sin agujero: el lock server-side rechazaba). aplicado
 en palpito y calendar. commits e3ae927 + ec51113.

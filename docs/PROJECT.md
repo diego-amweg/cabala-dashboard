@@ -482,20 +482,6 @@ y mergea al instante. mismo fix en Calendar.tsx. en ningún momento hubo agujero
 integridad: el lock server-side rechazaba apuestas en la ventana ("cerró").
 limpieza: identidades fantasma previas (sin bets) se purgan a mano en upstash (ZREM+DEL).
 commits: e3ae927 (palpito), ec51113 (calendar).
-53. — palpito/calendar: identidad recién al primer pálpito (anti-bots) + re-merge de live
-contexto: (a) la tabla acumuló 11 identidades en horas sin difusión. analytics: 27
-visitantes directos sin referrer = scanners de dominios nuevos (certificate transparency)
-que ejecutan js; el register al montar les creaba identidad. (b) al recargar durante un
-partido en vivo, los inputs reaparecían hasta 60s: race entre el fetch base de fixtures y
-el poll de live (si live llega primero, su merge cae sobre lista vacía y se pierde hasta
-el próximo intervalo).
-decisión: (a) el register se dispara en el primer handleInput (ref anti-doble); los bots
-no tipean. el pálpito que dispara el registro sube después vía el sync one-time existente.
-(b) el efecto del poll de live depende de fixtures.length: al llegar la base, re-fetchea
-y mergea al instante. mismo fix en Calendar.tsx. en ningún momento hubo agujero de
-integridad: el lock server-side rechazaba apuestas en la ventana ("cerró").
-limpieza: identidades fantasma previas (sin bets) se purgan a mano en upstash (ZREM+DEL).
-commits: e3ae927 (palpito), [hash del commit de calendar].
 
 ## Cronograma realizado
 
