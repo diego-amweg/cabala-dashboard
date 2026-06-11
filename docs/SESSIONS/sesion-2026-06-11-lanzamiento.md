@@ -44,3 +44,12 @@ inflaban la tabla con identidades fantasma vía el register al montar. fix: iden
 recién al primer pálpito. segundo fix: race fixtures/live que mostraba inputs ~60s en
 partidos en vivo tras recargar (sin agujero: el lock server-side rechazaba). aplicado
 en palpito y calendar. commits e3ae927 + ec51113.
+
+## Addendum 3 (19:00-19:30) — split-brain de football-data y anti-retroceso
+tras el pitazo, football-data alternó FINISHED y TIMED (datos del 9 jun) por request:
+réplicas desincronizadas. un refresh malo degradó el cache (partido jugado de vuelta a
+scheduled): lock reabierto, puntos des-acreditados, posiciones vacías. fix: merge
+anti-retroceso en fixtures (estados solo avanzan, por id, held como diagnóstico) e
+invariante en standings (played total nunca decrece). verificado con 5 curls: resultado
+estable, 4 réplicas viejas sostenidas. el +3 del exacto quedó clavado y caño-eterno-84
+es el primer líder de la historia del pálpito. commit 893cc3e.

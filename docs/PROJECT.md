@@ -482,6 +482,25 @@ y mergea al instante. mismo fix en Calendar.tsx. en ningún momento hubo agujero
 integridad: el lock server-side rechazaba apuestas en la ventana ("cerró").
 limpieza: identidades fantasma previas (sin bets) se purgan a mano en upstash (ZREM+DEL).
 commits: e3ae927 (palpito), ec51113 (calendar).
+54. — fixtures/standings: anti-retroceso ante réplicas desincronizadas de football-data
+contexto: tras el final de méxico-sudáfrica, football-data sirvió respuestas alternadas
+para el mismo partido: FINISHED (lastUpdated del día) y TIMED (lastUpdated del 9 jun),
+según la réplica que tocara en cada request. un refresh con réplica vieja degradó el
+cache: el partido terminado volvió a scheduled, lo que (a) reabría el lock server-side
+del pálpito (apostar a un partido ya jugado, incluso durante uno en vivo), (b)
+des-acreditaba puntos ya otorgados (flapping 3→0→3) y (c) vaciaba las posiciones.
+verificado con curls consecutivos: ~4 de 5 requests devolvían la réplica vieja.
+decisión: principio "los estados solo avanzan" (hermano del merge item-level del heat,
+ADR 51). en /api/fixtures, merge por id contra el cache previo: un status nunca se
+degrada (scheduled < live < finished) y un finished con score no se pisa con un finished
+sin score; el response expone held (ítems sostenidos) como autodiagnóstico. en
+/api/standings, invariante payload-level: el total de partidos jugados nunca decrece;
+si la corrida trae menos que el cache, se sirve el último bueno con nota.
+consecuencias: resultado estable ante la lotería de réplicas (5/5 corridas consistentes,
+held:1 delatando las viejas sostenidas). lock sellado, puntos clavados. riesgo residual
+aceptado: una corrección legítima de score con el mismo status sí pasa (el merge solo
+frena degradaciones).
+commit: 893cc3e.
 
 ## Cronograma realizado
 
