@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 interface FixtureItem {
   id: string;
@@ -27,6 +27,9 @@ interface LiveItem {
 
 type PalpitoMap = Record<string, { h: number; a: number }>;
 
+interface TopUser { alias: string; pts: number }
+interface Identity { id: string; alias: string }
+
 function normalize(s: string) { return s.toLowerCase().trim(); }
 
 function mergeWithLive(fixtures: FixtureItem[], liveItems: LiveItem[]): FixtureItem[] {
@@ -45,6 +48,95 @@ export default function Palpito() {
   const [error, setError] = useState(false);
   const [palpitos, setPalpitos] = useState<PalpitoMap>({});
   const [shared, setShared] = useState(false);
+
+  const [identity, setIdentity] = useState<Identity | null>(null);
+  const [serverPts, setServerPts] = useState<number | null>(null);
+  const [serverRank, setServerRank] = useState<number | null>(null);
+  const [serverTotal, setServerTotal] = useState<number | null>(null);
+  const [top, setTop] = useState<TopUser[]>([]);
+  const [lockedBets, setLockedBets] = useState<Record<string, boolean>>({});
+
+  const timerRefs = useRef<Record<string, NodeJS.Timeout>>({});
+  const hasSynced = useRef(false);
+
+  useEffect(() => {
+    const timers = timerRefs.current;
+    return () => { Object.values(timers).forEach(clearTimeout); };
+  }, []);
+
+  useEffect(() => {
+    let localIdent: Identity | null = null;
+    const identStr = localStorage.getItem('cabala:palpito:id');
+    if (identStr) {
+      try {
+        localIdent = JSON.parse(identStr);
+        setIdentity(localIdent);
+      } catch { }
+    }
+
+    if (!localIdent) {
+      fetch('/api/palpito', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'register' }),
+        headers: { 'Content-Type': 'application/json' }
+      }).then(r => r.json()).then(data => {
+        if (data.id && data.alias) {
+          const newIdent = { id: data.id, alias: data.alias };
+          localStorage.setItem('cabala:palpito:id', JSON.stringify(newIdent));
+          setIdentity(newIdent);
+        }
+      }).catch(() => { });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!identity || fixtures.length === 0) return;
+    let cancelled = false;
+
+    const syncServer = async () => {
+      try {
+        const res = await fetch(`/api/palpito?id=${identity.id}`);
+        const data = await res.json();
+        if (cancelled) return;
+        if (data.registered) {
+          if (data.pts !== undefined) setServerPts(data.pts);
+          if (data.rank !== undefined) setServerRank(data.rank);
+          if (data.total !== undefined) setServerTotal(data.total);
+          if (data.top) setTop(data.top);
+
+          if (data.bets) {
+            setPalpitos(prev => {
+              const next = { ...prev, ...data.bets };
+              localStorage.setItem('cabala:palpitos', JSON.stringify(next));
+              return next;
+            });
+          }
+
+          if (!hasSynced.current) {
+            hasSynced.current = true;
+            const currentLocal: PalpitoMap = JSON.parse(localStorage.getItem('cabala:palpitos') || '{}');
+            for (const mId of Object.keys(currentLocal)) {
+              if (!data.bets || !data.bets[mId]) {
+                const matchStatus = fixtures.find(f => f.id === mId)?.status;
+                if (matchStatus === 'scheduled') {
+                  const b = currentLocal[mId];
+                  fetch('/api/palpito', {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'bet', id: identity.id, matchId: mId, h: b.h, a: b.a }),
+                    headers: { 'Content-Type': 'application/json' }
+                  }).catch(() => { });
+                }
+              }
+            }
+          }
+        }
+      } catch { }
+    };
+
+    syncServer();
+    const interval = setInterval(syncServer, 300000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [identity, fixtures.length]);
 
   useEffect(() => {
     const saved = localStorage.getItem('cabala:palpitos');
@@ -100,12 +192,33 @@ export default function Palpito() {
 
   const handleInput = (id: string, side: 'h' | 'a', value: string) => {
     const parsed = parseInt(value, 10);
+    const finalVal = isNaN(parsed) ? 0 : Math.max(0, Math.min(20, parsed));
+    let currentH = 0;
+    let currentA = 0;
+
     setPalpitos(prev => {
       const current = prev[id] || { h: 0, a: 0 };
-      const next = { ...prev, [id]: { ...current, [side]: isNaN(parsed) ? 0 : Math.max(0, Math.min(20, parsed)) } };
+      const next = { ...prev, [id]: { ...current, [side]: finalVal } };
+      currentH = next[id].h;
+      currentA = next[id].a;
       localStorage.setItem('cabala:palpitos', JSON.stringify(next));
       return next;
     });
+
+    if (identity) {
+      if (timerRefs.current[id]) clearTimeout(timerRefs.current[id]);
+      timerRefs.current[id] = setTimeout(() => {
+        fetch('/api/palpito', {
+          method: 'POST',
+          body: JSON.stringify({ action: 'bet', id: identity.id, matchId: id, h: currentH, a: currentA }),
+          headers: { 'Content-Type': 'application/json' }
+        }).then(r => r.json()).then(data => {
+          if (data.error === 'locked') {
+            setLockedBets(prev => ({ ...prev, [id]: true }));
+          }
+        }).catch(() => { });
+      }, 600);
+    }
   };
 
   let pts = 0;
@@ -125,8 +238,12 @@ export default function Palpito() {
     }
   });
 
+  const displayPts = serverPts !== null ? serverPts : pts;
+
   const shareProde = async () => {
-    const text = `mi pálpito en Cábala: ${pts} pts (${exactos} exactos · ${ganadores} ganadores) · jugá el prode sin registrarte → https://cabala.futbol`;
+    const text = serverRank !== null
+      ? `voy #${serverRank} en el prode de Cábala como ${identity?.alias}: ${displayPts} pts (${exactos} exactos · ${ganadores} ganadores) · jugá el prode sin registrarte → https://cabala.futbol`
+      : `mi pálpito en Cábala: ${displayPts} pts (${exactos} exactos · ${ganadores} ganadores) · jugá el prode sin registrarte → https://cabala.futbol`;
     if (typeof navigator !== 'undefined' && navigator.share) {
       try { await navigator.share({ text }); } catch { }
     } else {
@@ -147,13 +264,20 @@ export default function Palpito() {
 
   return (
     <div className="rounded-xl border border-stone-200 bg-white p-4">
-      <div className="mb-4 flex items-center justify-between border-b border-stone-100 pb-3">
+      <div className={`${identity ? 'mb-2' : 'mb-4'} flex items-center justify-between border-b border-stone-100 pb-3`}>
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-stone-800">tu pálpito</span>
-          <span className="font-mono text-sm tabular-nums text-stone-600">{pts} pts</span>
+          <span className="font-mono text-sm tabular-nums text-stone-600">{displayPts} pts</span>
         </div>
         <button onClick={shareProde} className="inline-flex items-center gap-1.5 rounded-md border border-orange-300 bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-900 transition-colors hover:bg-orange-100"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>{shared ? 'copiado' : 'compartir'}</button>
       </div>
+
+      {identity && (
+        <div className="mb-4 text-[11px] text-stone-500">
+          jugás como <span className="font-medium text-stone-700">{identity.alias}</span>
+          {serverRank !== null && serverTotal !== null ? ` · #${serverRank} de ${serverTotal}` : ''}
+        </div>
+      )}
 
       {!hasBets && (
         <p className="mb-4 text-xs text-stone-500">cargá tu pálpito antes del pitazo. exacto vale 3, embocar al ganador vale 1. sin registro: queda en tu navegador.</p>
@@ -176,6 +300,7 @@ export default function Palpito() {
                   <span className="text-stone-300">-</span>
                   <input type="number" min="0" max="20" inputMode="numeric" value={valA} onChange={e => handleInput(f.id, 'a', e.target.value)} className="w-10 rounded border border-stone-200 bg-white px-1 py-0.5 text-center font-mono text-stone-900 outline-none focus:border-orange-400" />
                   <span className="w-[60px] truncate">{f.away}</span>
+                  {lockedBets[f.id] && <span className="text-[10px] text-stone-400">cerró</span>}
                 </div>
               </div>
             );
@@ -215,6 +340,23 @@ export default function Palpito() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {top.length > 0 && (
+        <div className="mt-4 border-t border-stone-100 pt-3">
+          <span className="mb-2 block text-[10px] text-stone-400">la tabla &middot; top 10</span>
+          <div className="space-y-1">
+            {top.map((u, i) => {
+              const isMe = identity && u.alias === identity.alias;
+              return (
+                <div key={i} className={`flex justify-between px-2 py-1 text-xs ${isMe ? 'rounded bg-orange-50 text-orange-950' : 'text-stone-600'}`}>
+                  <span>{i + 1}. {u.alias}</span>
+                  <span className="font-mono tabular-nums">{u.pts}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
