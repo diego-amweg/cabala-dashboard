@@ -58,6 +58,7 @@ export default function Palpito() {
 
   const timerRefs = useRef<Record<string, NodeJS.Timeout>>({});
   const hasSynced = useRef(false);
+  const registering = useRef(false);
 
   useEffect(() => {
     const timers = timerRefs.current;
@@ -74,19 +75,6 @@ export default function Palpito() {
       } catch { }
     }
 
-    if (!localIdent) {
-      fetch('/api/palpito', {
-        method: 'POST',
-        body: JSON.stringify({ action: 'register' }),
-        headers: { 'Content-Type': 'application/json' }
-      }).then(r => r.json()).then(data => {
-        if (data.id && data.alias) {
-          const newIdent = { id: data.id, alias: data.alias };
-          localStorage.setItem('cabala:palpito:id', JSON.stringify(newIdent));
-          setIdentity(newIdent);
-        }
-      }).catch(() => { });
-    }
   }, []);
 
   useEffect(() => {
@@ -188,7 +176,7 @@ export default function Palpito() {
     fetchLive();
     const interval = setInterval(fetchLive, 60000);
     return () => { cancelled = true; clearInterval(interval); };
-  }, []);
+  }, [fixtures.length]);
 
   const handleInput = (id: string, side: 'h' | 'a', value: string) => {
     const parsed = parseInt(value, 10);
@@ -204,6 +192,21 @@ export default function Palpito() {
       localStorage.setItem('cabala:palpitos', JSON.stringify(next));
       return next;
     });
+
+    if (!identity && !registering.current) {
+      registering.current = true;
+      fetch('/api/palpito', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'register' }),
+        headers: { 'Content-Type': 'application/json' }
+      }).then(r => r.json()).then(data => {
+        if (data.id && data.alias) {
+          const newIdent = { id: data.id, alias: data.alias };
+          localStorage.setItem('cabala:palpito:id', JSON.stringify(newIdent));
+          setIdentity(newIdent);
+        }
+      }).catch(() => { registering.current = false; });
+    }
 
     if (identity) {
       if (timerRefs.current[id]) clearTimeout(timerRefs.current[id]);
