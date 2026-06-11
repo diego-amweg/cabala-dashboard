@@ -3,7 +3,7 @@ import { cacheGet, cacheSet } from '@/lib/cache';
 
 const PULSE_CACHE_KEY = 'pulse:global';
 const PULSE_CACHE_TTL = 6 * 60 * 60; // 6h (los datos de wikipedia son diarios)
-const UA = 'CabalaDashboard/1.0 (https://cabala-dashboard.vercel.app; mundial 2026)';
+const UA = 'CabalaDashboard/1.0 (https://cabala.futbol; mundial 2026)';
 
 // artículos del Mundial 2026 en varios idiomas grandes. la suma de sus visitas es la
 // señal de "atención mundial". si un título cambia o falla, se saltea (no rompe el total).

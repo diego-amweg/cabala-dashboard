@@ -126,7 +126,7 @@ export default function Palpito() {
   });
 
   const shareProde = async () => {
-    const text = `mi pálpito en Cábala: ${pts} pts (${exactos} exactos · ${ganadores} ganadores) · jugá el prode sin registrarte → https://cabala-dashboard.vercel.app`;
+    const text = `mi pálpito en Cábala: ${pts} pts (${exactos} exactos · ${ganadores} ganadores) · jugá el prode sin registrarte → https://cabala.futbol`;
     if (typeof navigator !== 'undefined' && navigator.share) {
       try { await navigator.share({ text }); } catch { }
     } else {

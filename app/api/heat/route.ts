@@ -6,7 +6,7 @@ const API_BASE = 'https://api.football-data.org/v4';
 const HEAT_CACHE_KEY = 'heat:teams';
 const HEAT_CACHE_TTL = 7 * 24 * 60 * 60;
 const HEAT_MAX_AGE = 6 * 60 * 60 * 1000;
-const UA = 'CabalaDashboard/1.0 (https://cabala-dashboard.vercel.app; mundial 2026)';
+const UA = 'CabalaDashboard/1.0 (https://cabala.futbol; mundial 2026)';
 
 const EN_ARTICLE_OVERRIDE: Record<string, string> = {
   'United States': "United States men's national soccer team",

@@ -213,7 +213,7 @@ export default function CabalaDashboard() {
   };
 
   const shareCabala = async () => {
-    const url = 'https://cabala-dashboard.vercel.app';
+    const url = 'https://cabala.futbol';
     const data = { title: 'Cábala', text: 'Cábala — el dashboard del Mundial 2026', url };
     if (typeof navigator !== 'undefined' && navigator.share) {
       try { await navigator.share(data); } catch { /* el usuario canceló */ }
