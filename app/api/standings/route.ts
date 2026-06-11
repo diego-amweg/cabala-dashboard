@@ -116,6 +116,13 @@ export async function GET(req: Request) {
 
     const isMatchDay = data.matches.some((m: any) => m.stage === 'GROUP_STAGE' && m.utcDate && isToday_ART(m.utcDate));
 
+    // anti-retroceso: el total de partidos jugados del torneo nunca decrece. si esta corrida
+    // trae menos que el cache, vino de una réplica atrasada de football-data: servir el último bueno.
+    const totalPlayed = (gs: Group[]) => gs.reduce((s, g) => s + g.table.reduce((x, r) => x + r.played, 0), 0);
+    if (cached && totalPlayed(groups) < totalPlayed(cached.groups)) {
+      return serveStaleOr({ note: 'réplica atrasada de football-data; se sirve el último bueno' });
+    }
+
     await cacheSet(STANDINGS_CACHE_KEY, { groups, updatedAt: Date.now(), isMatchDay }, STANDINGS_CACHE_TTL);
     return NextResponse.json({ groups, updatedAt: Date.now(), count: groups.length, isMatchDay });
   } catch {

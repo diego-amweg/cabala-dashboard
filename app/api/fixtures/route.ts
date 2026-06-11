@@ -116,8 +116,22 @@ export async function GET(req: Request) {
 
     const isMatchDay = data.matches.some((m: any) => m.stage === 'GROUP_STAGE' && m.utcDate && isToday_ART(m.utcDate));
 
-    await cacheSet(FIXTURES_CACHE_KEY, { items, updatedAt: Date.now(), isMatchDay }, FIXTURES_CACHE_TTL);
-    return NextResponse.json({ items, updatedAt: Date.now(), count: items.length, isMatchDay });
+    // anti-retroceso: football-data sirve réplicas desincronizadas (11 jun: FINISHED y TIMED
+    // alternados para el mismo partido). un estado nunca se degrada: scheduled < live < finished.
+    // tampoco se pisa un finished con score por un finished sin score.
+    const RANK = { scheduled: 0, live: 1, finished: 2 } as const;
+    const prevById = new Map((cached?.items ?? []).map((p) => [p.id, p]));
+    const merged: FixtureItem[] = items.map((it) => {
+      const prev = prevById.get(it.id);
+      if (!prev) return it;
+      if (RANK[it.status] < RANK[prev.status]) return prev;
+      if (prev.status === 'finished' && it.status === 'finished' && it.homeScore === undefined && prev.homeScore !== undefined) return prev;
+      return it;
+    });
+    const held = merged.filter((x, i) => x !== items[i]).length;
+
+    await cacheSet(FIXTURES_CACHE_KEY, { items: merged, updatedAt: Date.now(), isMatchDay }, FIXTURES_CACHE_TTL);
+    return NextResponse.json({ items: merged, updatedAt: Date.now(), count: merged.length, isMatchDay, held });
   } catch {
     return serveStaleOr({ error: 'error al consultar football-data' });
   }
