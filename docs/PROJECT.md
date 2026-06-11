@@ -383,6 +383,77 @@ se caza con el Call Stack, no adivinando. los algoritmos de layout geométrico (
 tienen que tolerar entradas degeneradas (área/lado 0); confiar en best=Infinity para aceptar
 el primer item de cada fila es frágil ante NaN.
 commit: 224e307 (components/Thermometer.tsx).
+49. — fase 0 público + dominio cabala.futbol
+contexto: decisión de hacer visible el dashboard con el pálpito como gancho. antes de
+difundir: higiene técnica y de marca.
+decisión: (1) chat escondido (import y render comentados en page.tsx): Sonnet sin rate
+limit era un agujero de saldo; reactivación con suscripción = tema de la mutación
+post-mundial. (2) metadata OG completa en layout.tsx + og.jpg: el og.png original (5.2MB)
+era ignorado en silencio por WhatsApp (límite práctico ~600KB); convertido a jpg de 193KB
+la preview salió con imagen. el caché de preview de WhatsApp se esquiva con ?v=N. (3)
+manifest PWA (app/manifest.ts) + íconos del corazón naranja (192/512 + apple-icon 180):
+instalable en el celular sin service worker; push/SW quedan para sprint 7.5. (4) Vercel
+Analytics (@vercel/analytics, import /react). (5) dominio cabala.futbol comprado en
+Vercel (US$15/año; cabala.app no estaba disponible): en español, temático, dictable por
+teléfono y sobrevive a la mutación a dashboard futbolero. URLs actualizadas en
+metadataBase, shares y user-agents de Wikipedia (pulse/heat).
+riesgo aceptado: las covers de la capa inmersiva son capturas de pantalla propias de los
+servicios recomendados; gris legal de riesgo bajo (uso editorial/promocional),
+reemplazables en 20 minutos ante cualquier queja.
+lección operativa: Vercel salteó el deployment de un commit (6e619e9) sin aviso; el smoke
+test daba 404 contra el deploy viejo. regla nueva: antes de probar producción, verificar
+en Deployments que el commit exacto figure Ready; si falta, Redeploy manual.
+commits: 447c038, dc262fb, 1612bd7.
+
+50. — el pálpito: prode sin registro + identidad anónima asignada + tabla global
+contexto: diagnóstico de producto: el dashboard era información commodity sin loop de
+retención; las palancas del hincha (identidad, participación, emoción compartida) estaban
+flojas. el diferencial elegido: participación sin fricción — el prode argentino sin
+crear cuenta, con la marca "el pálpito" (en difusión se usa la palabra "prode").
+decisión v1 (localStorage puro, commit 25f92b8): components/Palpito.tsx autocontenido
+(fetch propio de fixtures + merge live, sin tocar Calendar), pronóstico de resultado
+exacto por partido, scoring prode (exacto 3, ganador 1) calculado client-side, share
+estilo Wordle. inputs solo en partidos scheduled.
+decisión v2 (backend + tabla, commits 6e619e9, 41d6cd7 y el frontend de esta sesión):
+- identidad anónima ASIGNADA por el sistema, sin login: { id: uuid, alias } donde el
+  alias tiene voz de marca (gambeta-dorado-74); vive en localStorage y en redis
+  (palpito:user:{id}). el concepto general (definido antes en conversación): el usuario
+  participa con un nombre que le asignamos; si algún día quiere su propio nombre, ahí sí
+  login. este es el primer ladrillo de identidad para la mutación post-mundial.
+- /api/palpito: register (rate 5/h por IP), bet (rate 60/min, valida enteros 0-20, lock
+  server-side), GET (scoring SERVER-side contra fixtures:groups — nunca se aceptan puntos
+  del cliente —, ZADD a palpito:rank, top 10 por ZREVRANGE + MGET de alias, posición por
+  ZREVRANK). helper genérico lib/redis.ts (redisCmd) para comandos arbitrarios de Upstash.
+- recálculo lazy: el score de cada usuario se recalcula cuando ÉL consulta (pull, sin
+  cron). tradeoff aceptado: el score de un usuario inactivo queda viejo en la tabla hasta
+  que vuelve.
+- lock por status del fixture cacheado (el shape no tiene utcDate): ventana de ~5min
+  post-pitazo en día de partido. pendiente: agregar utcDate aditivo al mapeo de fixtures
+  y pasar el lock a reloj.
+- frontend: registro automático al montar, sync cada 5min, subida one-time de pálpitos
+  locales (solo scheduled), debounce 600ms por partido, tabla top 10 con fila propia
+  resaltada, share con posición y alias. degradación total: si redis/el endpoint fallan,
+  el módulo sigue 100% en modo local.
+descartado por ahora: comentarios/chat con texto libre (moderación obligatoria + masa
+crítica; la identidad anónima construida acá serviría para eso mañana). siguiente si el
+pálpito valida: v3 ligas con código compartible (el verdadero motor de distribución).
+primera escritura de datos de usuarios del proyecto; vigilar free tier de upstash.
+
+51. — heat: merge por equipo con el último valor bueno (stale-on-error a nivel ítem)
+contexto: en la mañana del kickoff, wikimedia throttleó la api de pageviews y 12-14
+selecciones (incluida argentina, 5ª del planeta en atención) volvieron con views null →
+heat 0. el filtro del squarify (ADR 48) las ocultaba del treemap en silencio, y cada
+?refresh=true re-cacheaba una lotería distinta de ceros por 6 horas: el "nunca cachear
+vacío" se cumplía a nivel payload pero no a nivel equipo.
+decisión: (1) retryNull pasa a 3 intentos con backoff 400/800ms. (2) merge item-level:
+antes de calcular maxViews/heat, todo equipo con medición 0 toma su último valor bueno
+del cache previo (prevViews por code); maxViews se calcula post-merge; el cache nuevo se
+escribe ya mergeado, propagando el último bueno. (3) debug.recovered lista los rescatados.
+tradeoff: un equipo recuperado mezcla la ventana temporal anterior en una corrida;
+aceptable frente a una selección ausente. ningún equipo del mundial tiene 0 vistas reales,
+así que el merge no esconde datos genuinos.
+principio elevado: la robustez stale-on-error aplica también por ítem, no solo por payload.
+commit: 06d80c3.
 
 ## Cronograma realizado
 
