@@ -16,6 +16,7 @@ import Thermometer from '@/components/Thermometer';
 import TeamPicker from '@/components/TeamPicker';
 import RelatoDelDia from '@/components/RelatoDelDia';
 import Cabalas from '@/components/Cabalas';
+import Palpito from '@/components/Palpito';
 import { MAP_VIEWBOX, COUNTRY_PATHS, STATE_PATHS, CITIES } from '@/data/mapData';
 
 interface LiveItem {
@@ -73,7 +74,7 @@ const CALLE: CalleItem[] = [
 
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
 
-const ALL_MODULES = ['map', 'senti', 'memes', 'calle', 'journey', 'calendar', 'gifs', 'road', 'immersive', 'cabalas'] as const;
+const ALL_MODULES = ['palpito', 'map', 'senti', 'memes', 'calle', 'journey', 'calendar', 'gifs', 'road', 'immersive', 'cabalas'] as const;
 type ModuleId = typeof ALL_MODULES[number];
 
 export default function CabalaDashboard() {
@@ -314,6 +315,7 @@ export default function CabalaDashboard() {
 
         <div className="mt-6 flex flex-wrap gap-1.5">
           {[
+            { id: 'palpito' as const, label: 'el pálpito' },
             { id: 'map' as const, label: 'ojo de dios' },
             { id: 'senti' as const, label: 'termómetro' },
             { id: 'memes' as const, label: 'memes y polémicas' },
@@ -350,6 +352,16 @@ export default function CabalaDashboard() {
             })}
           </div>
         </section>
+
+        {activeMods.has('palpito') && (
+          <section className="mt-6">
+            <div className="mb-1.5 flex items-baseline justify-between">
+              <h2 className="text-xs font-medium tracking-wide text-stone-700">el pálpito</h2>
+              <span className="text-[10px] text-stone-400">exacto 3 · ganador 1 · sin registro</span>
+            </div>
+            <Palpito />
+          </section>
+        )}
 
         {activeMods.has('map') && (
           <section className="mt-6">
