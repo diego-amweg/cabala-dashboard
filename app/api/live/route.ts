@@ -42,10 +42,6 @@ function fmtAR(utc: string): { date: string; time: string } {
   };
 }
 
-function ymd(d: Date): string {
-  return `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}${String(d.getUTCDate()).padStart(2, '0')}`;
-}
-
 function mapStatus(state: string | undefined): 'scheduled' | 'live' | 'finished' {
   if (state === 'in') return 'live';
   if (state === 'post') return 'finished';
@@ -70,9 +66,10 @@ export async function GET(req: Request) {
     return NextResponse.json({ items: [], updatedAt: Date.now(), hasLive: false, ...fallback });
   };
 
-  // ventana: de ayer a +3 días. cubre el "hoy" en cualquier huso y deja ver el próximo partido.
-  const now = Date.now();
-  const url = `${ESPN_URL}?dates=${ymd(new Date(now - 24 * 3600 * 1000))}-${ymd(new Date(now + 3 * 24 * 3600 * 1000))}&limit=200`;
+  // sin parámetro de fechas: el scoreboard default de ESPN es el del día y trae el estado EN VIVO real.
+  // con dates=rango ESPN devolvía calendario con estados viejos (todo "pre"); aprendido el 11/6 en pleno kickoff.
+  // los partidos futuros ya no vienen acá: el front degrada a /api/fixtures para "próximo", como estaba diseñado.
+  const url = `${ESPN_URL}?limit=50`;
 
   try {
     const res = await fetch(url, { headers: { accept: 'application/json' } });
