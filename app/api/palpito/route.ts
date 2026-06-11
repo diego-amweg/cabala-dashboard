@@ -43,7 +43,7 @@ export async function POST(req: Request) {
       const count = await redisCmd<number>(['INCR', rlKey]);
       if (count === null) return NextResponse.json({ error: 'redis', detail: 'rl_incr_failed' });
       if (count === 1) await redisCmd(['EXPIRE', rlKey, 60]);
-      if (count > 30) return NextResponse.json({ error: 'rate' });
+      if (count > 60) return NextResponse.json({ error: 'rate' });
 
       const { id, matchId, h, a } = body;
       const parsedH = typeof h === 'number' ? h : parseInt(h, 10);
