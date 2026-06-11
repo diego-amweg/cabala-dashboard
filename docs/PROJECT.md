@@ -454,6 +454,20 @@ aceptable frente a una selección ausente. ningún equipo del mundial tiene 0 vi
 así que el merge no esconde datos genuinos.
 principio elevado: la robustez stale-on-error aplica también por ítem, no solo por payload.
 commit: 06d80c3.
+52. — live: scoreboard de espn sin rango de fechas (estado en vivo real)
+contexto: en el kickoff (méxico-sudáfrica), /api/live devolvía todos los partidos
+"scheduled" con el partido al minuto 41. los nombres matcheaban perfecto: el problema era
+el estado. diagnóstico por comparación: el scoreboard default de espn (sin parámetros)
+decía state "in"; nuestro endpoint pedía ?dates=rango&limit=200 y recibía estados viejos.
+50 minutos después el feed con rango ya mostraba "in": consistente con un cache/edge de
+espn con lag para queries con parámetros de fecha. el default es la fuente confiable.
+decisión: la url queda sin dates (scoreboard del día). los partidos futuros ya no vienen
+de espn: el front degrada a /api/fixtures para "próximo", como estaba diseñado. se elimina
+la función ymd sin uso.
+consecuencias: header, calendario y pálpito reflejan el vivo real (verificado con méxico
+1-0 sudáfrica, 45'+4'). el costo de la ventana amplia (un solo fetch para hoy y futuros)
+se paga con la degradación ya existente.
+commit: 304f804.
 
 ## Cronograma realizado
 

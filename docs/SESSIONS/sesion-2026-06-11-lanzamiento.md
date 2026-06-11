@@ -30,3 +30,10 @@ Jornada del kickoff. Todo deployado antes del primer partido (México-Sudáfrica
 - Difusión fase 1: WhatsApp, r/argentina, Bluesky, medio local (mensaje: "armá tu prode
   del Mundial sin registrarte").
 - Opcional: borrar el jugador fantasma del smoke test (wing-glorioso-74) en Upstash.
+
+## Addendum (16:00-17:00) — incidente live en el kickoff
+/api/live reportaba scheduled con el partido en juego. causa: el scoreboard de espn con
+?dates=rango sirve estados con lag; sin parámetros trae el vivo real. fix en caliente
+durante el entretiempo (commit 304f804). verificado: live 45'+4' en header, calendario
+y api. lección: para datos en tiempo real, validar el endpoint exacto con el evento
+ocurriendo, no solo con el shape.
