@@ -501,6 +501,58 @@ held:1 delatando las viejas sostenidas). lock sellado, puntos clavados. riesgo r
 aceptado: una corrección legítima de score con el mismo status sí pasa (el merge solo
 frena degradaciones).
 commit: 893cc3e.
+55. — la matemática mundialista: predictor probabilístico (Elo + Poisson + Monte Carlo)
+contexto: faltaba una capa analítica al dashboard. la idea original (scoring individual de
+jugadores y técnicos, ajuste por formación) se descartó por falta de fuente de datos gratuita
+confiable: API-Football no da 2026, FBref/WhoScored son scraping frágil, Opta/StatsBomb son
+prohibitivos, y las APIs no oficiales (ESPN/Sofascore) son riesgo operativo en pleno torneo.
+native-stats.org se evaluó por sus odds de casas (probabilidades ya calibradas) pero no expone
+API json (solo HTML server-side, scraping frágil contra ToS). se acotó a un modelo a nivel de
+selección, que es serio y construible con lo que hay.
+decisión: motor estadístico en tres capas, todo nuevo y aditivo (no toca módulos existentes).
+- Elo inicial de las 48 selecciones hardcodeado desde eloratings.net (tabla pública, ya
+  incorpora el historial real de cada equipo). mapeado a los nombres EN ESPAÑOL que devuelve
+  /api/fixtures (las claves de ELO_INITIAL coinciden con fixtures:groups; cero fallbacks).
+  lib/elo.ts: expectedScore logístico, updateElo, eloWithHost (+65 a MEX/USA/CAN solo cuando
+  juegan; localía aplicada al vuelo, no persistida).
+- modelo de goles Poisson con corrección Dixon-Coles para marcadores bajos (lib/poisson.ts).
+  matchProbabilities (con DC) para la vista partido por partido, donde la prob de empate se
+  muestra como número. ELO_TO_GOALS/BASE_GOALS/DC_RHO son constantes de literatura; calibración
+  fina pendiente si hace falta (el orden y las magnitudes ya son defendibles vs casas reales).
+- simulación Monte Carlo de 50.000 iteraciones (lib/montecarlo.ts): simula los 72 partidos de
+  grupos (o usa el resultado real donde ya se jugó), calcula posiciones con desempate FIFA
+  (pts → dif → GF, sin head-to-head, aproximación declarada), determina los 8 mejores terceros,
+  y usa la MATRIZ OFICIAL FIFA de las 495 combinaciones de terceros (data/thirdPlaceMatrix.ts,
+  verificada contra FIFA + NBC + Bleacher + CBS + Sky + MLS) para asignar cada tercero a su
+  llave. corre el bracket R32→final con la estructura canónica verificada. acumula prob de
+  alcanzar cada ronda y de ser campeón.
+endpoint /api/predictor: lee fixtures:groups de redis, deriva grupos (parseando "grupo X" del
+phase) y resultados reales (finished con score), corre el Monte Carlo, cachea en
+predictor:simulation con stale-on-error + maxAge dinámico (5min día de partido) + autodiagnóstico
+(unmatchedTeams debe ser []). componente Predictor.tsx con dos vistas (toggle): "camino al título"
+(las 48 por prob de campeón, barra de pasar de grupos, fila expandible con desglose por ronda,
+top 12 + "ver las 48", halo naranja en la selección elegida) y "partido por partido" (barra
+local/empate/visitante + marcador más probable; los jugados arriba con su resultado real).
+módulo activo por defecto, debajo del pálpito.
+PERFORMANCE (crítico): el Monte Carlo de 50k tardaba 69s, lo que excedía el corte de 10s de
+funciones serverless de Vercel (timeout garantizado en prod). se optimizó SIN bajar iteraciones
+ni calidad: factoriales 0!..8! precomputados, curva Poisson cacheada como CDF por lambda,
+muestreo de goles por equipo separado (2 sorteos de 9) en vez de grilla de 81, y Elo efectivo
+precomputado una vez. resultado: 69s → ~5s (15x), números idénticos (mismas invariantes: suma
+champion 100%, r32=32, r16=16). la corrección DC se saca solo del SAMPLEO del Monte Carlo (no
+cambia quién avanza); matchProbabilities la mantiene para la vista de partidos. red de seguridad:
+presupuesto de tiempo de 8s dentro del loop (MC_TIME_BUDGET_MS); si se pasara, corta y devuelve
+lo acumulado con el conteo real de iteraciones en vez de tirar timeout (no se dispara con ~5s).
+proceso: construido con Antigravity bajo el flujo controlado (3 specs encadenadas: lógica pura →
+endpoint+montecarlo → componente+integración). en la revisión de diffs se cazaron (tsc/build no
+los ven): `as any` en eloWithHost, dos `catch (err: any)`, y floats crudos en anchos de barra.
+el cuello de 69s se cazó leyendo el log de dev (no era cold-start de turbopack: era la simulación
+real), se midió en sandbox y se optimizó con números a la vista antes de tocar el repo.
+aprendizaje: un endpoint que corre cómputo pesado sincrónico tiene que medirse contra el límite
+de la función serverless ANTES de pushear; el modo dev no tiene ese límite y esconde el problema.
+descartado (con motivo): scoring de jugadores/técnicos (sin fuente gratuita confiable), ajuste
+por formación (no hay API gratuita de alineaciones), odds de native-stats (sin API, scraping).
+commits: [completar con los hashes de los dos commits].
 
 ## Cronograma realizado
 

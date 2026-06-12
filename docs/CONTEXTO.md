@@ -16,6 +16,19 @@ PÚBLICO desde el 11/6: dominio propio cabala.futbol, preview OG para WhatsApp, 
 ## estado por módulo
 - **header / pulso global**: real vía Wikipedia (/api/pulse, atención mundial 6 idiomas, 0-100 + tendencia + serie, cache 6h). ADR 38. Partido actual/próximo: REAL vía /api/live (ESPN, polling 60s, degradación a /api/fixtures). Scoreboard SIN rango de fechas (con dates= ESPN sirve estados viejos; ADR 52). Fecha ART real. Cronómetro fake eliminado. ADR 47.
 - **el pálpito** (diferencial de participación): prode sin registro. v1 local + v2 con identidad anónima asignada (alias con voz de marca), scoring server-side anti-trampa, tabla global top 10 en Redis (sorted set), recálculo lazy sin cron, share con posición. Degradación total a modo local. /api/palpito + lib/redis.ts + Palpito.tsx. ADR 50. Pendiente: utcDate en fixtures para lock por reloj (hoy por status, ventana ~5min); v3 ligas con amigos si valida. Identidad nace con el primer pálpito tipeado (anti-bots de scanners); re-merge de live al cargar fixtures (ADR 53).
+- **la matemática mundialista** (predictor probabilístico): REAL. motor Elo + Poisson +
+  Dixon-Coles + Monte Carlo (50k sims). Elo inicial de las 48 desde eloratings.net (lib/elo.ts,
+  en español, cero fallbacks); goles esperados Poisson con DC (lib/poisson.ts); simulación con la
+  matriz oficial FIFA de 495 combinaciones de terceros + bracket canónico verificado
+  (data/thirdPlaceMatrix.ts), desempate pts→dif→GF (sin head-to-head, declarado). /api/predictor
+  lee fixtures:groups, usa resultados reales donde ya se jugó, cachea en predictor:simulation
+  (stale-on-error + maxAge dinámico + autodiagnóstico unmatchedTeams). Predictor.tsx: dos vistas
+  (camino al título: las 48 por prob de campeón, fila expandible por ronda, top 12 + ver las 48,
+  halo naranja en mi selección · partido por partido: local/empate/visitante + marcador más
+  probable, jugados arriba con resultado real). localía +65 a MEX/USA/CAN al vuelo. activo por
+  defecto, bajo el pálpito. PERF: Monte Carlo optimizado 69s→~5s (factoriales/CDF cacheados,
+  muestreo separado, Elo precomputado) para entrar en el límite de 10s de Vercel; presupuesto de
+  tiempo de 8s como red de seguridad. ADR 55.
 - **termómetro mundial** (corazón / paso 2): REAL, a 48. Mide atención (no cariño) vía Wikipedia, declarado honestamente. /api/heat deriva las 48 de football-data (escudo + tla), resuelve el título canónico en en.wikipedia (sigue redirects) + overrides "soccer/men's" para casos especiales, mide pageviews EN, heat 0-100 sqrt. Concurrencia limitada (5) + retry ante hipo de red. Robustez stale-on-error. Thermometer.tsx: treemap squarified (área ∝ calor) + latido por calor (respeta prefers-reduced-motion) + escudos de football-data + toggle "mi tribu"/"las 48". ADR 40 (v1, 12) + ADR 41 (a 48) + ADR 42 (idioma nativo). Mide en inglés + idioma nativo de cada país (langlinks de Wikipedia, vistas sumadas); podio menos anglocéntrico. Robustez: el squarify ignora selecciones con calor 0 (área 0 → NaN → loop infinito que clavaba la página; ADR 48). Merge item-level con el último valor bueno ante throttling de Wikimedia (ningún equipo vuelve a desaparecer; ADR 51).
 - **calendario** (/api/fixtures) y **fase de grupos** (/api/standings): reales desde football-data. 12 grupos, 48 equipos. Posiciones se llenan durante el torneo. Robustez stale-on-error + reintentos en el front. maxAge dinámico: 5min en día de partido, 1h el resto. Calendar pollea /api/live cada 60s y hace merge de scores+minuto por nombre normalizado (mergeWithLive). ADRs 36, 37, 39, 47. Pendiente: bracket (cuando football-data cargue ~27 jun). Anti-retroceso ante réplicas desincronizadas de football-data: estados solo avanzan, standings nunca decrece (ADR 54).
 - **memes/peleas** (Bluesky): real. Hashtags reales como query, filtro keep/reject con Haiku, feed cacheado en Redis TTL 15min. ADR 35. Pendiente: evitar re-clasificar en frío (gasto de saldo).
@@ -44,6 +57,9 @@ PÚBLICO desde el 11/6: dominio propio cabala.futbol, preview OG para WhatsApp, 
 - "En las calles" (CALLE en page.tsx): textos curados editoriales, no reales. GDELT y RSS evaluados para post-kickoff (~13 jun en adelante).
 - Dependencia del saldo de Anthropic = riesgo operativo durante el Mundial.
 - Cleanup cosmético Tailwind v4 (Calendar max-h, Road -left).
+- la matemática mundialista: calibración fina de constantes (ELO_TO_GOALS/BASE_GOALS/DC_RHO) si
+  se quiere afinar magnitudes (el orden ya es correcto). verificar en prod que /api/predictor
+  vuelve dentro del límite de Vercel (en local ~5s; el presupuesto de 8s cubre el peor caso).
 
 ## descartado (con motivo)
 - Claude Code como ejecutor (ADR 27; control directo en VS Code).
