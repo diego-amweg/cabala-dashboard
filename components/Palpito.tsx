@@ -61,8 +61,7 @@ export default function Palpito() {
   const registering = useRef(false);
 
   useEffect(() => {
-    const timers = timerRefs.current;
-    return () => { Object.values(timers).forEach(clearTimeout); };
+    return () => { Object.values(timerRefs.current).forEach(clearTimeout); };
   }, []);
 
   useEffect(() => {
@@ -70,7 +69,7 @@ export default function Palpito() {
     const identStr = localStorage.getItem('cabala:palpito:id');
     if (identStr) {
       try {
-        localIdent = JSON.parse(identStr);
+        localIdent = JSON.parse(identStr) as Identity;
         setIdentity(localIdent);
       } catch { }
     }
@@ -102,7 +101,7 @@ export default function Palpito() {
 
           if (!hasSynced.current) {
             hasSynced.current = true;
-            const currentLocal: PalpitoMap = JSON.parse(localStorage.getItem('cabala:palpitos') || '{}');
+            const currentLocal = JSON.parse(localStorage.getItem('cabala:palpitos') || '{}') as PalpitoMap;
             for (const mId of Object.keys(currentLocal)) {
               if (!data.bets || !data.bets[mId]) {
                 const matchStatus = fixtures.find(f => f.id === mId)?.status;
@@ -130,7 +129,7 @@ export default function Palpito() {
     const saved = localStorage.getItem('cabala:palpitos');
     if (saved) {
       try {
-        setPalpitos(JSON.parse(saved));
+        setPalpitos(JSON.parse(saved) as PalpitoMap);
       } catch { }
     }
   }, []);

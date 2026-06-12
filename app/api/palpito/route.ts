@@ -68,7 +68,7 @@ export async function POST(req: Request) {
 
       const betKey = `palpito:bets:${id}`;
       const betsRaw = await redisCmd<string>(['GET', betKey]);
-      const bets: Record<string, { h: number; a: number; ts: number }> = betsRaw ? JSON.parse(betsRaw) : {};
+      const bets = (betsRaw ? JSON.parse(betsRaw) : {}) as Record<string, { h: number; a: number; ts: number }>;
 
       bets[matchId] = { h: parsedH, a: parsedA, ts: Date.now() };
 
@@ -79,7 +79,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ error: 'bad_action' });
-  } catch (err) {
+  } catch (err: unknown) {
     return NextResponse.json({ error: 'server', detail: err instanceof Error ? err.message : 'unknown' });
   }
 }
@@ -92,10 +92,10 @@ export async function GET(req: Request) {
     const userRaw = await redisCmd<string>(['GET', `palpito:user:${id}`]);
     if (!userRaw) return NextResponse.json({ registered: false });
 
-    const user: { alias: string } = JSON.parse(userRaw);
+    const user = JSON.parse(userRaw) as { alias: string };
 
     const betsRaw = await redisCmd<string>(['GET', `palpito:bets:${id}`]);
-    const bets: Record<string, { h: number; a: number; ts: number }> = betsRaw ? JSON.parse(betsRaw) : {};
+    const bets = (betsRaw ? JSON.parse(betsRaw) : {}) as Record<string, { h: number; a: number; ts: number }>;
 
     const cached = await cacheGet<CachedFixtures>('fixtures:groups');
     if (!cached || !cached.items || cached.items.length === 0) return NextResponse.json({ error: 'fixtures', detail: 'cache_empty' });
@@ -141,7 +141,7 @@ export async function GET(req: Request) {
         if (usersRaw) {
           for (let i = 0; i < topIds.length; i++) {
             const uRaw = usersRaw[i];
-            const uAlias = uRaw ? JSON.parse(uRaw).alias : 'anon';
+            const uAlias = uRaw ? (JSON.parse(uRaw) as { alias: string }).alias : 'anon';
             top.push({ alias: uAlias, pts: topScores[i] });
           }
         }
@@ -160,7 +160,7 @@ export async function GET(req: Request) {
       top
     });
 
-  } catch (err) {
+  } catch (err: unknown) {
     return NextResponse.json({ error: 'server', detail: err instanceof Error ? err.message : 'unknown' });
   }
 }
