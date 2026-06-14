@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import Bubble from '@/components/Bubble';
 
 interface FixtureItem {
   id: string;
@@ -265,7 +266,15 @@ export default function Palpito() {
   const hasBets = Object.keys(palpitos).length > 0;
 
   return (
-    <div className="rounded-xl border border-stone-200 bg-white p-4">
+    <>
+      <Bubble id="palpito" variant="play">
+        {identity
+          ? (serverRank !== null && serverTotal !== null
+              ? <>seguí, <strong className="font-medium">{identity.alias}</strong> — vas {serverRank}° de {serverTotal}.</>
+              : <>seguí jugando, <strong className="font-medium">{identity.alias}</strong> — cargá los que faltan.</>)
+          : 'jugá el prode acá: adiviná los resultados de los partidos. sin cuenta, queda en tu navegador.'}
+      </Bubble>
+      <div className="rounded-xl border border-stone-200 bg-white p-4">
       <div className={`${identity ? 'mb-2' : 'mb-4'} flex items-center justify-between border-b border-stone-100 pb-3`}>
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-stone-800">tu pálpito</span>
@@ -362,5 +371,6 @@ export default function Palpito() {
         </div>
       )}
     </div>
+    </>
   );
 }

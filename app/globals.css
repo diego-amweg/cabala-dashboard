@@ -24,3 +24,14 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@keyframes cabala-bubble-in {
+  0% { opacity: 0; transform: translateY(-3px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.cabala-bubble-in {
+  animation: cabala-bubble-in 0.5s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cabala-bubble-in { animation: none; }
+}

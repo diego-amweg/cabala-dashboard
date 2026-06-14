@@ -18,6 +18,7 @@ import RelatoDelDia from '@/components/RelatoDelDia';
 import Cabalas from '@/components/Cabalas';
 import Palpito from '@/components/Palpito';
 import Predictor from '@/components/Predictor';
+import Bubble from '@/components/Bubble';
 import { MAP_VIEWBOX, COUNTRY_PATHS, STATE_PATHS, CITIES } from '@/data/mapData';
 
 interface LiveItem {
@@ -289,6 +290,10 @@ export default function CabalaDashboard() {
           </div>
         </header>
 
+        <div className="mt-4 rounded-lg border border-orange-200 bg-orange-50 px-4 py-2.5">
+          <p className="text-xs leading-snug text-orange-950">el Mundial 2026 en una sola pantalla: lo que pasa en la cancha, el pulso del mundo y tus cábalas. <span className="text-orange-800">sin cuenta — elegí tu selección y cargá tu pálpito.</span></p>
+        </div>
+
         <RelatoDelDia />
         <Cabalas variant="dia" />
 
@@ -371,6 +376,7 @@ export default function CabalaDashboard() {
               <h2 className="text-xs font-medium tracking-wide text-stone-700">la matemática mundialista</h2>
               <span className="text-[10px] text-stone-400">elo + poisson · quién la gana, según los números</span>
             </div>
+            <Bubble id="predictor" variant="data">acá no jugás vos: la compu calcula las chances de cada selección.</Bubble>
             <Predictor highlightName={myTeam} />
           </section>
         )}
@@ -381,6 +387,7 @@ export default function CabalaDashboard() {
               <h2 className="text-xs font-medium tracking-wide text-stone-700">ojo de dios · 16 ciudades sede</h2>
               <span className="text-[10px] text-stone-400">click en una ciudad · tamaño = intensidad</span>
             </div>
+            <Bubble id="map" variant="info">las 16 sedes del Mundial en el mapa — tocá una para conocerla.</Bubble>
             <div className="rounded-xl border border-stone-200 bg-white p-4">
               <svg viewBox={MAP_VIEWBOX} className="h-auto w-full">
                 {COUNTRY_PATHS.map((d, i) => <path key={`country-${i}`} d={d} fill="#f5f5f4" stroke="#d6d3d1" strokeWidth={0.8} />)}
@@ -407,6 +414,7 @@ export default function CabalaDashboard() {
               <h2 className="text-xs font-medium tracking-wide text-stone-700">termómetro mundial</h2>
               <span className="text-[10px] text-stone-400">cuánto mira el planeta a cada selección · inglés + idioma local · Wikipedia</span>
             </div>
+            <Bubble id="senti" variant="info">cuánto mira el mundo a cada selección, ahora mismo. el más caliente, más grande.</Bubble>
             <div className="rounded-xl border border-stone-200 bg-white p-3">
               {heat.length === 0 ? (
                 <p className="px-2 text-xs text-stone-400">midiendo el calor del mundo…</p>
@@ -493,6 +501,7 @@ export default function CabalaDashboard() {
               <h2 className="text-xs font-medium tracking-wide text-stone-700">cábalas</h2>
               <span className="text-[10px] text-stone-400">folklore del hincha</span>
             </div>
+            <Bubble id="cabalas" variant="play">los rituales de cancha del hincha — encontrá la tuya y guardala.</Bubble>
             <Cabalas variant="coleccion" />
           </section>
         )}
