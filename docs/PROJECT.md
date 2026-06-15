@@ -553,6 +553,46 @@ de la función serverless ANTES de pushear; el modo dev no tiene ese límite y e
 descartado (con motivo): scoring de jugadores/técnicos (sin fuente gratuita confiable), ajuste
 por formación (no hay API gratuita de alineaciones), odds de native-stats (sin API, scraping).
 commits: [completar con los hashes de los dos commits].
+56. — onboarding: masthead explicativo + globitos de ayuda en los módulos
+contexto: feedback de campo al compartir el dashboard: los únicos comentarios fueron dos
+preguntas — "¿qué es esto?" y "¿para qué sirve?". diagnóstico: la voz editorial de Cábala
+(nombres evocadores como "ojo de dios", "el pálpito", "la matemática mundialista") asume un
+contexto que el visitante nuevo no tiene, y no había un cartel que orientara en el primer
+pantallazo. agravante propio: al sumar "la matemática mundialista" (ADR 55) quedaron DOS
+módulos de predicción que se confunden ("¿yo predigo o predice la máquina?").
+decisión:
+- MASTHEAD: una franja explicativa (tinte naranja, bg-orange-50) debajo del header existente,
+  que responde qué es y qué se puede hacer ("el Mundial 2026 en una sola pantalla... sin cuenta
+  — elegí tu selección y cargá tu pálpito"). NO repite el título "Cábala" (el header ya lo tiene);
+  complementa en vez de duplicar.
+- GLOBITOS: componente reusable components/Bubble.tsx, una tira fina de color con copy corto
+  arriba de un módulo. Anima la entrada (fade) UNA vez por módulo vía localStorage
+  (cabala:bubbleSeen:{id}), después queda quieto; respeta prefers-reduced-motion por CSS
+  (animación en globals.css). localStorage leído en useEffect (SSR-safe).
+- Tres variantes de color que encriptan significado: naranja "play" (hacés algo: el pálpito,
+  cábalas), verde "data" (la compu calcula: la matemática mundialista — matchea las barras del
+  predictor), neutro "info" (esto te muestra algo: termómetro, ojo de dios).
+- El globito del pálpito es DINÁMICO y vive dentro de Palpito.tsx (necesita alias y puesto):
+  sin identidad invita ("jugá el prode acá, sin cuenta"); con identidad personaliza ("seguí,
+  {alias} — vas {puesto}° de {total}"); con identidad sin puesto, "cargá los que faltan". Los
+  otros cuatro globitos son estáticos, insertados en page.tsx.
+- Contraste pálpito (naranja, "vos jugás") vs matemática mundialista (verde, "la compu calcula"):
+  resuelve la confusión entre los dos módulos de predicción.
+alcance: 5 de los 6 módulos opacos. El "relato del día" quedó AFUERA a propósito: es una franja
+suelta arriba (no un módulo con header), pegada al masthead, y un globito ahí apilaría dos cosas
+explicativas en el primer pantallazo (amontona en vez de aclarar). El masthead ya orienta esa zona.
+proceso: construido con Antigravity en UNA pasada (no spec encadenada ni loop autónomo), por ser
+tarea mecánica con el criterio ya cerrado en diseño. Discusión previa sobre darle a AGM un "loop
+con review/debug en cada paso": se descartó porque AGM YA tiene ese loop (tsc+build) y esta misma
+sesión (ADR 55) pasó limpio sobre cinco bugs reales que cazó la revisión humana, incluso violando
+un "no any" explícito de la spec. Conclusión: review proporcional al riesgo — pasada única + una
+revisión final para trabajo mecánico; paso a paso para lo de alto riesgo. El diff salió limpio
+(fragment de Palpito balanceado sin reindentar, sin any, hooks ok). Verificado en local: masthead
+ok, globito del pálpito cambia de estado bien, animación dispara una sola vez.
+deuda menor conocida (no bloqueante): en el pálpito, el globito se superpone con el subtítulo del
+header y con la línea interna "jugás como {alias} · #N"; se decidió dejarlo así (molesta poco,
+limpieza cosmética para cuando sea).
+commit: [completar con el hash].
 
 ## Cronograma realizado
 

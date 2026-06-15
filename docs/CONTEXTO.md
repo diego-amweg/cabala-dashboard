@@ -40,6 +40,13 @@ PÚBLICO desde el 11/6: dominio propio cabala.futbol, preview OG para WhatsApp, 
 - **cábalas** (gancho del corazón): folklore del hincha curado (data/cabalas.ts, 20 entradas, solo colectivo/cultural, sin jugadores reales). Cabalas.tsx: "la cábala del día" rotada por fecha fija arriba + colección en módulo toggleable + "mi cábala" en localStorage. Frontend puro. ADR 46. Crecimiento curado (Claude propone, Diego valida), NO búsqueda automática.
 - **ticker "en las calles"**: control por drag/teclado/hover, sin botones (decisión).
 - **mapa de sedes**: FAKE (intensidad random).
+- **onboarding** (masthead + globitos): para responder el "¿qué es esto?" de campo. Franja
+  explicativa (bg-orange-50) bajo el header (no repite el título). Componente Bubble.tsx:
+  globitos de ayuda arriba de cinco módulos (pálpito, matemática mundialista, termómetro, ojo de
+  dios, cábalas), copy corto, animan una vez por módulo vía localStorage (cabala:bubbleSeen:{id}),
+  respetan prefers-reduced-motion. Tres variantes: naranja "play", verde "data", neutro "info". El
+  del pálpito es dinámico (dentro de Palpito.tsx): invita sin identidad, personaliza con alias +
+  puesto. El relato del día quedó afuera a propósito (choca con el masthead arriba). ADR 56.
 
 ## fakes intencionales (a reemplazar)
 - mapa de sedes: intensidad random.
